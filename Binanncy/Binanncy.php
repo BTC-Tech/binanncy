@@ -5,6 +5,7 @@ Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
 Version: 1.1.2
 */
+require_once "class_commas.php";
 
 require_once "BinanncyBase.php";
 require_once 'binance.php';
@@ -1370,32 +1371,9 @@ Enable The API
 
     <div class="container">
         <div class="row">
-        Under Construction.
-<?
-/*
-$ch = curl_init();
-$timestamp = round(microtime(true) * 1000);
-$secret = 'bmrLfulhggHgudLEHzRj7zNz**************p3KladNAcI4qLg';
-$querystring = urlencode("LTCBTC&side=BUY&type=LIMIT&timeInForce=GTC&quantity=1&price=0.1");
-$signature = hash_hmac('SHA256',$querystring ,$secret);
-
-curl_setopt($ch, CURLOPT_URL, "https://api.3commas.io/public/api/ver1/accounts");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_GET, 1);
-
-$headers = array();
-$headers[] = "X-Mbx-Apikey: EAXHTI2ZyuWqVdVC*****************RsVrptYUnl2XYM9f";
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-$result = curl_exec($ch);
-print_r($result);
-if (curl_errno($ch)) {
-    echo 'Error:' . curl_error($ch);
-}
-curl_close ($ch);
-*/
-?>
         <?
+		//$commas = new commas();
+		//echo $commas->test_class();
 $this->customers_obj->prepare_items();
 $this->customers_obj->display();
 ?>
