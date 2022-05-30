@@ -238,6 +238,19 @@ $('.ttip').tooltip();
 		});
 
 		//wpmm_throttle_protection
+		$("#wpmmadm_tset").click(function() {
+
+		var data = {
+			'action': 'toggle_setting',
+			'setting': 'wpmm_api_enabled'
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					//notification...
+					alert('Setting Saved.');
+				});
+		
+		});
 		$("#wpmm_tset").click(function() {
 
 		var data = {

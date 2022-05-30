@@ -100,7 +100,8 @@ function wpb_admin_dashboard(){
 function adm_dashboard(){
 $admlink = admin_url( 'admin.php?page='.$this->slug);
 ?>
-<button class="button" onclick="document.location.href='<? echo $admlink; ?>'">Goto Admin</button>&nbsp;<button class="button">Enable/Disable API</button>&nbsp;<button class="button">Sync 3Commas Accounts</button>
+
+<button class="button" onclick="document.location.href='<? echo $admlink; ?>'">Goto Admin</button>&nbsp;<button id="wpmmadm_tset" class="button">Enable/Disable API</button>&nbsp;<button class="button" disabled="disabled">Sync 3Commas Accounts</button>
 <?		
 }
 function wpmm_admin_deletekey(){
