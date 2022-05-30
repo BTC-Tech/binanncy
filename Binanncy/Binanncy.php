@@ -57,6 +57,8 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
 
 			add_action('wp_ajax_wpb_getstats', [$this, 'wpb_getstats']);
 			add_action('wp_ajax_wpmm_delete_api', [$this, 'wpmm_delete_api']);
+			
+			add_action('wp_ajax_binanncy_sync_comma', [$this, 'binanncy_sync_comma']);
 
 
         }else{
@@ -70,6 +72,47 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+
+function binanncy_sync_comma(){
+	check_admin_referer( 'wpmm' );
+	
+	$key = sanitize_text_field($_REQUEST['apikey']);
+	global $wpdb;
+	
+	$table = $wpdb->prefix."binance_API_keys";
+	
+	//get key info
+	
+	$account = get_option('commas_prefix').strtotime("now");
+	
+	$api_key = $wpdb->get_var("SELECT API_KEY from $table where ID=".$key);
+	$api_secret = $wpdb->get_var("SELECT API_SECRET FROM $table where ID=".$key);
+	
+	//use new class to create the account...
+	$comma = new commas();
+	
+	$result = $comma->createAccount($account, $api_key, $api_secret);
+	
+	$result = json_decode($result);
+		
+	if (!$result->error) {
+			$commsID = $result->id;
+		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$key);	
+		?>
+                 <br><i class="fa-solid fa-link"></i>
+                 <?
+			 echo " 3Commas ID: <b>{$commsID}</b></br>Ref: <b>{$account}</b>";
+		
+
+	} else {
+	echo "There was an error!";	
+	print_r($result);
+	}
+	
+//echo "[account=>{$account}] [api_key=>{$api_key}]";
+
+wp_die();	
+}
 function Binanncy_el_save_master_api(){
 	check_admin_referer( 'binny' );
 	
@@ -78,7 +121,8 @@ function Binanncy_el_save_master_api(){
 	
 			$key = sanitize_text_field($_REQUEST['master_api']);
 			$secret = sanitize_text_field($_REQUEST['master_secret']);
-
+			$prefix = sanitize_text_field($_REQUEST['comms_prefix']);
+			update_option('commas_prefix', $prefix) || add_option('commas_prefix', $prefix);
 			update_option('commas_api_key', $key) || add_option('commas_api_key', $key);	
 			update_option('commas_api_secret', $secret) || add_option('commas_api_secret', $secret);		
 	
@@ -1107,7 +1151,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, 3comms_id VARCHAR(100) DEFAULT NULL
+        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, 3comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL
     );";
 
     $wpdb->query($structure);
@@ -1382,6 +1426,10 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
     <td><input type="text" name="master_secret" id="master_secret" size="50" value="<? echo get_option('commas_api_secret'); ?>" /></td>
   </tr>
     <tr>
+    <td><div align="right">Account Prefix :&nbsp;</div></td>
+    <td><input type="text" name="comms_prefix" id="comms_prefix" size="20" value="<? echo get_option('commas_prefix'); ?>" placeholder="e.g wp_ or binance_" /></td>
+  </tr>
+    <tr>
     <td colspan="2" align="right">
                     <?php wp_nonce_field( 'binny' ); ?>
                 <?php submit_button('Save API Credentials'); ?>
@@ -1393,7 +1441,12 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
 
       <div class="row">
             <div class="col-md-3" style="margin:auto;">
-<a href="javascript:;" id="testtheapi">Test The API Status</a>
+<label class="switch">
+  <input type="checkbox" <? if (get_option('autocomms') == 'on') { ?>checked<? } ?> id="wpmm_autocomms">
+  <span class="slider"></span>
+</label>
+Auto Add Accounts
+	
 			</div>
             <div class="col-md-3" style="margin:auto;">
 <label class="switch">
@@ -1421,7 +1474,7 @@ Enable The API
         <div class="row">
         <?
 		//$commas = new commas();
-	echo commas::test_class();
+	//echo commas::test_class();
 	
 $this->customers_obj->prepare_items();
 $this->customers_obj->display();
@@ -1694,10 +1747,14 @@ class WPMMThrottle_List extends WP_List_Table {
 			echo $user_info->first_name." ".$user_info->last_name;
 		 if(class_exists('commas')){
 			 if ($item['3comms_id']) {
-			 echo "<br>3Commas ID: </br>";
+				 ?>
+                 <div id="comma_<? echo $item['ID']; ?>">
+                 <br><i class="fa-solid fa-link"></i>
+                 <?
+			 echo " 3Commas ID: <b>{$item['3comms_id']}</b></br>Ref: <b>{$item['localID']}</b></div>";
 			 } else {
 				 ?>
-				<br><i class="fa-solid fa-link-slash"></i> No Link To 3Commas Yet.
+				<div id="comma_<? echo $item['ID']; ?>"><br><i class="fa-solid fa-link-slash"></i> No Link To 3Commas Yet.</div>
                 <?
 			 }
 		 }
@@ -1755,7 +1812,7 @@ class WPMMThrottle_List extends WP_List_Table {
 		function column_col_opts($item){
 ?>
 <a href="javascript:;" title="View Secret Key" alt="View Secret Key" onclick="admViewSecret('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>_<? echo $item['API_SECRET']; ?>')"><i class="fa-solid fa-eye fa-xl"></i></a>&nbsp;
-<a href="javascript:;" title="Delete" alt="Delete" onclick="admDeleteKey('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>')"><i class="fa-regular fa-trash-can fa-xl"></i></a>
+<a href="javascript:;" title="Delete" alt="Delete" onclick="admDeleteKey('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>')"><i class="fa-regular fa-trash-can fa-xl"></i></a><a href="javascript:;" title="Link With 3Commas" alt="Link With 3Commas" onclick="jsSyncComma(<? echo $item['ID']; ?>);">&nbsp;<i class="fa-solid fa-link fa-xl"></i>
 <?
 			//return $title;
 		}

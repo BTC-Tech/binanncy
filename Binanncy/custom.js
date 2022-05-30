@@ -24,6 +24,25 @@ jQuery(document).ready(function($) {
 				});
 });
 }
+function jsSyncComma(keyid){
+jQuery(document).ready(function($) {
+	
+$("#comma_"+keyid).html('Connecting to 3commas...');
+
+		var data = {
+			'action': 'binanncy_sync_comma',
+			'_wpnonce': wpmm.nonce,
+			'apikey': keyid
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					//notification...
+				$("#comma_"+keyid).html(response);
+
+				});
+	
+});
+}
 function admDeleteKey(elem){
 jQuery(document).ready(function($) {
 	

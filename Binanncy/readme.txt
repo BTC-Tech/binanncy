@@ -31,3 +31,5 @@ Easy wordpress standard installation.
 = 1.1.2 =
 <p>Added new Admin Dashboard Widget</p>
 <p>Fixed missing function due to moving to class file</p>
+= 1.1.3 =
+Added in new 3commas CLASS to sync accounts accross API's
