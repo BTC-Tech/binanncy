@@ -25,6 +25,7 @@ class Binanncy {
 			add_action('activate_Binanncy/Binanncy.php', [$this,'wpmmInstall']);
 			add_action('deactivate_Binanncy/Binanncy.php', [$this,'wpmmUninstall']);
 			//add_action( 'plugins_loaded', [$this,'update_db_check'] );
+		add_action( 'admin_post_Binanncy_el_save_master_api', [ $this, 'Binanncy_el_save_master_api' ] );
         $licenseKey=get_option("Binanncy_lic_Key","");
         $liceEmail=get_option( "Binanncy_lic_email","");
         BinanncyBase::addOnDelete(function(){
@@ -69,6 +70,22 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+function Binanncy_el_save_master_api(){
+	check_admin_referer( 'binny' );
+	
+	//commas_api_key
+	//commas_api_secret
+	
+			$key = sanitize_text_field($_REQUEST['master_api']);
+			$secret = sanitize_text_field($_REQUEST['master_secret']);
+
+			update_option('commas_api_key', $key) || add_option('commas_api_key', $key);	
+			update_option('commas_api_secret', $secret) || add_option('commas_api_secret', $secret);		
+	
+	wp_safe_redirect(admin_url( 'admin.php?page='.$this->slug.'&s=success'));
+	
+}
+
 function toggle_setting(){
 	global $wpdb;
 
@@ -1104,6 +1121,8 @@ global $wpdb;
     $wpdb->query($structure);
 
 	add_option('wpmm_version_check', $this->getCurrentVersion());
+	add_option('commas_api_key', '');
+	add_option('commas_api_secret', '');
 	add_option('wpmm_email_logging', 'off');
 	add_option('wpmm_api_enabled', 'off');
 	add_option('wpmm_settings', false);
@@ -1147,6 +1166,8 @@ global $wpdb;
 	$structure = "DROP TABLE $table";
 	$wpdb->query($structure);
 
+	delete_option('commas_api_key');
+	delete_option('commas_api_secret');
  	delete_option("WPMailMon_lic_Key");
 	delete_option('wpmm_version_check');
 	delete_option('wpmm_api_enabled');
@@ -1191,7 +1212,8 @@ wp_localize_script( 'wpmm-js', 'wpmm', array(
     'nonce' => wp_create_nonce( 'wpmm' )
 //
   ));
-
+		 wp_register_style( 'fawsomea', plugins_url('/css/all.css', __FILE__ ), true);
+		 wp_enqueue_style( 'fawsomea' ); 
 
 }
     function SetAdminStyle() {
@@ -1200,6 +1222,9 @@ wp_localize_script( 'wpmm-js', 'wpmm', array(
 wp_enqueue_script('jquery-ui-datepicker');  
 wp_enqueue_style('jquery-ui-css', plugins_url("jquery-ui.css",$this->plugin_file));    
 wp_enqueue_style( "WPMailMonLic" );
+		 wp_register_style( 'fawsomea', plugins_url('/css/all.css', __FILE__ ), true);
+		 wp_enqueue_style( 'fawsomea' ); 
+
 
     }
     function ActiveAdminMenu(){
@@ -1343,7 +1368,30 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
 </div>
 <div>
     <div class="container">
-        <div class="row">
+    <div class="row">
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <input type="hidden" name="action" value="Binanncy_el_save_master_api"/>
+
+    <table width="100%" border="0">
+  <tr>
+    <td><div align="right">3comms master API key :&nbsp;</div></td>
+    <td><input type="text" name="master_api" id="master_api" size="50" value="<? echo get_option('commas_api_key'); ?>" /></td>
+  </tr>
+  <tr>
+    <td><div align="right">3comms API secret :&nbsp;</div></td>
+    <td><input type="text" name="master_secret" id="master_secret" size="50" value="<? echo get_option('commas_api_secret'); ?>" /></td>
+  </tr>
+    <tr>
+    <td colspan="2" align="right">
+                    <?php wp_nonce_field( 'binny' ); ?>
+                <?php submit_button('Save API Credentials'); ?>
+    </td>
+    </tr>
+</table> 
+   </form>
+    </div>
+
+      <div class="row">
             <div class="col-md-3" style="margin:auto;">
 <a href="javascript:;" id="testtheapi">Test The API Status</a>
 			</div>
@@ -1644,6 +1692,15 @@ class WPMMThrottle_List extends WP_List_Table {
 		$user_info = get_userdata($item['wpuid']);
 			echo "<b>".$user_info->user_login."</b><br>";
 			echo $user_info->first_name." ".$user_info->last_name;
+		 if(class_exists('commas')){
+			 if ($item['3comms_id']) {
+			 echo "<br>3Commas ID: </br>";
+			 } else {
+				 ?>
+				<br><i class="fa-solid fa-link-slash"></i> No Link To 3Commas Yet.
+                <?
+			 }
+		 }
 		}
 		function column_API_KEY($item){
 		?>
