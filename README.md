@@ -1,0 +1,2 @@
+# binanncy
+Binanncy Wordpress Plugin
