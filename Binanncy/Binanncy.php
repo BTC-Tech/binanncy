@@ -34,6 +34,7 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+		add_action('wp_ajax_toggle_setting', [$this,'toggle_Setting']);
 		add_action( 'wp_dashboard_setup', [$this, 'wpb_admin_dashboard']);
 		add_shortcode( 'binanncy', [$this,'scode_binanncy'] );
 		add_shortcode( 'binanncy_settings', [$this,'scode_binanncy_settings'] );
@@ -67,12 +68,40 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+function toggle_setting(){
+	global $wpdb;
+
+//	add_option('wpmm_email_logging', 'off');
+//	add_option('wpmm_throttle_protection', 'off');
+
+$config_setting = sanitize_text_field($_REQUEST['setting']) ?? null;
+
+if($config_setting){
+	$current_setting = get_option($config_setting);
+		if($current_setting == 'off'){
+		update_option($config_setting, 'on') || add_option($config_setting, 'on');
+		}
+		if($current_setting == 'on'){
+		update_option($config_setting, 'off') || add_option($config_setting, 'off');
+		}
+		if(!$current_setting){
+		update_option($config_setting, 'off') || add_option($config_setting, 'off');
+		}
+}
+	
+
+	wp_die();
+
+}
 function wpb_admin_dashboard(){
 	wp_add_dashboard_widget( 'dashboard_widget', 'Binanncy', [$this, 'adm_dashboard']);
 	
 }
 function adm_dashboard(){
-echo "Widget Under Construction.";		
+$admlink = admin_url( 'admin.php?page='.$this->slug);
+?>
+<button class="button" onclick="document.location.href='<? echo $admlink; ?>'">Goto Admin</button>&nbsp;<button class="button">Enable/Disable API</button>&nbsp;<button class="button">Sync 3Commas Accounts</button>
+<?		
 }
 function wpmm_admin_deletekey(){
 	global $wpdb;
