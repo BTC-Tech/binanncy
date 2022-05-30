@@ -33,3 +33,4 @@ Easy wordpress standard installation.
 <p>Fixed missing function due to moving to class file</p>
 = 1.1.3 =
 Added in new 3commas CLASS to sync accounts accross API's
+New admin featues for account prefix setting and auto create 3commas accounts on new API keys added.
