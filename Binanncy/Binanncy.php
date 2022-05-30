@@ -1090,7 +1090,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0
+        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, 3comms_id VARCHAR(100) DEFAULT NULL
     );";
 
     $wpdb->query($structure);
@@ -1373,7 +1373,8 @@ Enable The API
         <div class="row">
         <?
 		//$commas = new commas();
-		//echo $commas->test_class();
+	echo commas::test_class();
+	
 $this->customers_obj->prepare_items();
 $this->customers_obj->display();
 ?>

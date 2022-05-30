@@ -1,7 +1,7 @@
 <?
 class commas {
 
-	function test_class(){
+	public static function test_class(){
 		return "Class Under Construction.";	
 	}
 }
