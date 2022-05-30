@@ -68,7 +68,11 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
     }
 // ### CUSTOM FUNCTIONS
 function wpb_admin_dashboard(){
-echo "Widget Under Construction.";	
+	wp_add_dashboard_widget( 'dashboard_widget', 'Binanncy', [$this, 'adm_dashboard']);
+	
+}
+function adm_dashboard(){
+echo "Widget Under Construction.";		
 }
 function wpmm_admin_deletekey(){
 	global $wpdb;
