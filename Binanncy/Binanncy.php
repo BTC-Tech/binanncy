@@ -904,6 +904,26 @@ if ($_REQUEST['mode'] == 'api_keys') {
 	
 		$wpdb->query($sql);
 		
+		if (get_option('autocomms') == 'on'){
+			
+			//ADD IT TO 3COMMS
+	$account = get_option('commas_prefix').strtotime("now");
+	$keyID = $wpdb->get_var("SELECT ID FROM $table where API_KEY = '".$api_key."' AND API_SECRET = '".$api_secret."' AND wpuid=".$current_user->ID);
+	
+	//use new class to create the account...
+	$comma = new commas();
+	
+	$result = $comma->createAccount($account, $api_key, $api_secret);
+	
+	$result = json_decode($result);
+		
+	if (!$result->error) {
+			$commsID = $result->id;
+		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$keyID);	
+	}
+			
+		}
+		
 	 } else {
 		$err_msg = "Please enter an API key & Secret"; 
 	 }
@@ -1209,7 +1229,7 @@ global $wpdb;
 	$table = $wpdb->prefix."WPMailMon_throttle_rules";
 	$structure = "DROP TABLE $table";
 	$wpdb->query($structure);
-
+	delete_option('autocomms');
 	delete_option('commas_api_key');
 	delete_option('commas_api_secret');
  	delete_option("WPMailMon_lic_Key");
@@ -1442,7 +1462,7 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
       <div class="row">
             <div class="col-md-3" style="margin:auto;">
 <label class="switch">
-  <input type="checkbox" <? if (get_option('autocomms') == 'on') { ?>checked<? } ?> id="wpmm_autocomms">
+  <input type="checkbox" <? if (get_option('autocomms') == 'on') { ?>checked<? } ?> id="autocomms">
   <span class="slider"></span>
 </label>
 Auto Add Accounts

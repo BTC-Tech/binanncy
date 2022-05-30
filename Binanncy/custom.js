@@ -270,6 +270,22 @@ $('.ttip').tooltip();
 				});
 		
 		});
+		$("#autocomms").click(function() {
+
+		var data = {
+			'action': 'toggle_setting',
+			'setting': 'autocomms'
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					//notification...
+				$("#set_saved").show();
+				setTimeout(function(){
+				$("#set_saved").hide();
+				}, 5000);
+				});
+		
+		})
 		$("#wpmm_tset").click(function() {
 
 		var data = {
