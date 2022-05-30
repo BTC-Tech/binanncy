@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 1.1.1
+Version: 1.1.2
 */
 
 require_once "BinanncyBase.php";

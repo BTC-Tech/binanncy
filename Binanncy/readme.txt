@@ -28,3 +28,6 @@ Easy wordpress standard installation.
 = 1.1.0 =
 <p>Added in automatic update features.</p>
 <p>Updated README and user instructions</p>
+= 1.1.2 =
+<p>Added new Admin Dashboard Widget</p>
+<p>Fixed missing function due to moving to class file</p>
