@@ -34,6 +34,7 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+		add_action( 'wpb_dashboard_setup', [$this, 'wpb_admin_dashboard']);
 		add_shortcode( 'binanncy', [$this,'scode_binanncy'] );
 		add_shortcode( 'binanncy_settings', [$this,'scode_binanncy_settings'] );
 			add_action('wp_ajax_wpb_toggle_keystate', [$this, 'wpb_toggle_keystate']);
@@ -66,6 +67,9 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+function wpb_admin_dashboard(){
+echo "Widget Under Construction.";	
+}
 function wpmm_admin_deletekey(){
 	global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
