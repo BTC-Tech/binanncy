@@ -36,6 +36,7 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+		add_action('wp_ajax_wpb_sync_commas', [$this, 'wpb_sync_commas']);
 		add_action('wp_ajax_toggle_setting', [$this,'toggle_Setting']);
 		add_action( 'wp_dashboard_setup', [$this, 'wpb_admin_dashboard']);
 		add_shortcode( 'binanncy', [$this,'scode_binanncy'] );
@@ -73,6 +74,23 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
     }
 // ### CUSTOM FUNCTIONS
 
+function wpb_sync_commas(){
+	global $wpdb;
+	
+	$nonce = esc_attr( $_REQUEST['_nonce'] );
+
+	if ( ! wp_verify_nonce( $nonce, 'wpmm' ) ) {
+		die( 'Go get a life script kiddies' );
+	}
+		
+if( current_user_can('administrator')) {
+		commas::link_unlinked();
+		echo "Action Complete!";	
+}
+	
+
+wp_die();	
+}
 function binanncy_sync_comma(){
 	check_admin_referer( 'wpmm' );
 	
@@ -163,7 +181,7 @@ function adm_dashboard(){
 $admlink = admin_url( 'admin.php?page='.$this->slug);
 ?>
 
-<button class="button" onclick="document.location.href='<? echo $admlink; ?>'">Goto Admin</button>&nbsp;<button id="wpmmadm_tset" class="button">Enable/Disable API</button>&nbsp;<button class="button" disabled="disabled">Sync 3Commas Accounts</button>
+<button class="button" onclick="document.location.href='<? echo $admlink; ?>'">Goto Admin</button>&nbsp;<button id="wpmmadm_tset" class="button">Enable/Disable API</button>&nbsp;<button class="button" onclick="syncCommas();">Sync 3Commas Accounts</button>
 <?		
 }
 function wpmm_admin_deletekey(){
@@ -311,6 +329,7 @@ echo 'Binance API Status is: ' . $status['msg'];
 
 wp_die();
 }
+
 function wpmm_delete_api(){
 		global $wpdb;
 		global $current_user;
@@ -1456,7 +1475,6 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
 	<p><strong><span id="jax_msg"><? _e('Setting Changed!'); ?></span></strong></p>
 </div>
 <div>
-
     <div class="container">
     <div class="row">
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -1486,7 +1504,7 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
     </div>
 
       <div class="row">
-            <div class="col-md-3" style="margin:auto;">
+            <div class="col-md-4" style="margin:auto;">
 <label class="switch">
   <input type="checkbox" <? if (get_option('autocomms') == 'on') { ?>checked<? } ?> id="autocomms">
   <span class="slider"></span>
@@ -1494,19 +1512,9 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
 Auto Add Accounts
 	
 			</div>
-            <div class="col-md-3" style="margin:auto;">
-<label class="switch">
-  <input type="checkbox" <? if (get_option('wpmm_api_enabled') == 'on') { ?>checked<? } ?> id="wpmm_tset">
-  <span class="slider"></span>
-</label>
-Enable The API
+            <div class="col-md-4" style="margin:auto;">
+<button class="button" onclick="syncCommas();">Sync With 3Commas</button>
 	`		</div>
-            <div class="col-md-3" align="center">
-	<h2><? _e($e_count); ?></h2>API Calls Today
-			</div>
-            <div class="col-md-3" align="center">
-	<h2><? _e($err_count); ?></h2>Recent Errors
-			</div>
             
         </div>
     </div>

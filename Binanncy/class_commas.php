@@ -14,6 +14,7 @@ class commas {
 		return $db;
 		
 	}
+
 	public static function link_unlinked(){
 		global $wpdb;
 		$table = $wpdb->prefix."binance_API_keys";
@@ -25,8 +26,16 @@ class commas {
 		foreach($db as $rec){
 		//try to link each record
 		$account = get_option('commas_prefix').strtotime("now");
-		$api_key = $rec['API_KEY'];
-		$api_secret = $rec['API_SECRET'];
+		$api_key = $rec->API_KEY;
+		$api_secret = $rec->API_SECRET;
+		$result = $comma->createAccount($account, $api_key, $api_secret);
+	
+	$result = json_decode($result);
+		
+	if (!$result->error) {
+			$commsID = $result->id;
+		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$rec->ID);	
+	}
 		
 		}
 		

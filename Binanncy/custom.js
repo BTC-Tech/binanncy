@@ -12,6 +12,19 @@ function cpyPaste(fld) {
   /* Alert the copied text */
   alert("Copied the text: " + copyText.value);
 } 
+function syncCommas(){
+jQuery(document).ready(function($) {
+		var data = {
+			'action': 'wpb_sync_commas',
+			'_nonce': wpmm.nonce
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					alert(response);
+				});	
+});
+
+}
 function toggleKeyState(rl){
 jQuery(document).ready(function($) {
 		var data = {
