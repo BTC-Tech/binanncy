@@ -5,6 +5,32 @@ class commas {
 		return "Class Under Construction.";	
 	}
 	
+	public static function list_unlinked(){
+		global $wpdb;
+		$table = $wpdb->prefix."binance_API_keys";
+		
+		$db = $wpdb->get_results("SELECT * FROM $table where 3comms_id is NULL");
+		
+		return $db;
+		
+	}
+	public static function link_unlinked(){
+		global $wpdb;
+		$table = $wpdb->prefix."binance_API_keys";
+		
+		$db = $wpdb->get_results("SELECT * FROM $table where 3comms_id is NULL");
+		
+		$comma = new commas();
+		
+		foreach($db as $rec){
+		//try to link each record
+		$account = get_option('commas_prefix').strtotime("now");
+		$api_key = $rec['API_KEY'];
+		$api_secret = $rec['API_SECRET'];
+		
+		}
+		
+	}
 	function createAccount($account, $api_key, $api_secret) {
 		global $wpdb;
 		
@@ -37,6 +63,38 @@ if (curl_errno($ch)) {
 }
 curl_close ($ch);
 		
+	}
+function deleteAccount($account) {
+		global $wpdb;
+		
+$ch = curl_init();
+$timestamp = round(microtime(true) * 1000);
+$secret = get_option('commas_api_secret');
+$key = get_option('commas_api_key');
+
+
+$data = "account_id={$account}";
+$querystring = '/public/api/ver1/accounts/'.$account.'/remove?'.$data;
+$signature = hash_hmac('SHA256',$querystring ,$secret);
+curl_setopt($ch, CURLOPT_URL, "https://api.3commas.io/public/api/ver1/accounts/{$account}/remove");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'APIKEY: '.$key,
+    'Signature: '.$signature,
+	'Content-Type: application/x-www-form-urlencoded'
+));
+
+$result = curl_exec($ch);
+
+if (curl_errno($ch)) {
+    echo 'Error:' . curl_error($ch);
+} else {
+	return $result;
+}
+curl_close ($ch);	
 	}
 }
 

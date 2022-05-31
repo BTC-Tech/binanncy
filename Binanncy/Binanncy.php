@@ -178,6 +178,15 @@ function wpmm_admin_deletekey(){
 	}
 		
 if( current_user_can('administrator')) { 
+		//check if we can delete
+		$comms_id = $wpdb->get_var("select 3comms_id from $table where ID=".$apikey);
+		
+		if ($comms_id <> '') {
+			
+	$comma = new commas();
+	$result = $comma->deleteAccount($comms_id);
+	
+		}
 		$wpdb->query("DELETE FROM $table where ID=".$apikey);
 } else {
 	echo "No Permission";
@@ -305,9 +314,20 @@ wp_die();
 function wpmm_delete_api(){
 		global $wpdb;
 		global $current_user;
+		$table = $wpdb->prefix."binance_API_keys";
 		get_currentuserinfo();
 if ($current_user->ID>0){
-	$table = $wpdb->prefix."binance_API_keys";
+	
+	// get key info to delete
+		$comms_id = $wpdb->get_var("select 3comms_id from $table where ID=".$_REQUEST['apikey']);
+		
+		if ($comms_id <> '') {
+			
+	$comma = new commas();
+	$result = $comma->deleteAccount($comms_id);
+	
+		}
+			
 	$wpdb->query("DELETE FROM $table where ID=".$_REQUEST['apikey']." AND wpuid=".$current_user->ID);
 }
 
@@ -886,13 +906,17 @@ if ($_REQUEST['mode'] == 'api_keys') {
  if ($_REQUEST['action'] == 'adding_api') {
 	 
 	 //get form data
-	 
+	 $table = $wpdb->prefix."binance_API_keys";
 	 $api_key = sanitize_text_field($_REQUEST['api_key']);
 	 $api_secret = sanitize_text_field($_REQUEST['api_secret']);
 	 $err_msg = "";
 	 
+	 $key_exists = $wpdb->get_var("SELECT API_KEY FROM $table where API_KEY = '".$api_key."'");
+	 if ($key_exists == $api_key){
+		 $err_msg = "Key already exists on the network.";
+	 } else {
 	 if ($api_key && $api_secret){
-	 $table = $wpdb->prefix."binance_API_keys";
+	 
 	 $sql = "INSERT INTO $table (time_added, status, wpuid, API_KEY, API_SECRET) VALUES ('".strtotime("now")."', 1, ".$current_user->ID.", '".$api_key."', '".$api_secret."')";
 	 
 	 	$sql = $wpdb->prepare("INSERT INTO ".$table." (time_added, status, wpuid, API_KEY, API_SECRET) VALUES ('%d', 1, %d, '%s', '%s')", array(
@@ -926,6 +950,7 @@ if ($_REQUEST['mode'] == 'api_keys') {
 		
 	 } else {
 		$err_msg = "Please enter an API key & Secret"; 
+	 }
 	 }
 	 
 	 
@@ -1431,6 +1456,7 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
 	<p><strong><span id="jax_msg"><? _e('Setting Changed!'); ?></span></strong></p>
 </div>
 <div>
+
     <div class="container">
     <div class="row">
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -1727,7 +1753,6 @@ class WPMMThrottle_List extends WP_List_Table {
 	function get_columns() {
 		$columns = [
 			'wpuid'    => __( 'User ID', 'sp' ),
-			'status'    => __( 'Status', 'sp' ),
 			'time_added'    => __( 'Time/Date', 'sp' ),
 			'API_KEY'    => __( 'API Key', 'sp' ),
 			'col_opts'    => __( 'Options', 'sp' )
@@ -1831,8 +1856,9 @@ class WPMMThrottle_List extends WP_List_Table {
 
 		function column_col_opts($item){
 ?>
+<div align="center">
 <a href="javascript:;" title="View Secret Key" alt="View Secret Key" onclick="admViewSecret('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>_<? echo $item['API_SECRET']; ?>')"><i class="fa-solid fa-eye fa-xl"></i></a>&nbsp;
-<a href="javascript:;" title="Delete" alt="Delete" onclick="admDeleteKey('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>')"><i class="fa-regular fa-trash-can fa-xl"></i></a><a href="javascript:;" title="Link With 3Commas" alt="Link With 3Commas" onclick="jsSyncComma(<? echo $item['ID']; ?>);">&nbsp;<i class="fa-solid fa-link fa-xl"></i>
+<a href="javascript:;" title="Delete" alt="Delete" onclick="admDeleteKey('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>')"><i class="fa-regular fa-trash-can fa-xl"></i></a><? if ($item['localID'] == '') { ?><a href="javascript:;" title="Link With 3Commas" alt="Link With 3Commas" onclick="jsSyncComma(<? echo $item['ID']; ?>);">&nbsp;<i class="fa-solid fa-link fa-xl"></i></a><? } ?></div>
 <?
 			//return $title;
 		}
