@@ -34,3 +34,6 @@ Easy wordpress standard installation.
 = 1.1.3 =
 Added in new 3commas CLASS to sync accounts accross API's
 New admin featues for account prefix setting and auto create 3commas accounts on new API keys added.
+= 1.1.4 =
+Cleaned up Admin area and functions.
+Added 3commas sync accounts button on dashboard and admin area
