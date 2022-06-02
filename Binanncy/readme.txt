@@ -37,3 +37,5 @@ New admin featues for account prefix setting and auto create 3commas accounts on
 = 1.1.4 =
 Cleaned up Admin area and functions.
 Added 3commas sync accounts button on dashboard and admin area
+= 1.1.5 =
+Bug fixes release

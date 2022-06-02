@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 1.1.4
+Version: 1.1.5
 */
 require_once "class_commas.php";
 
@@ -937,6 +937,35 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
 <? if (!isset($_REQUEST['mode'])) {
 	
 ?>
+<style>
+.alert {
+  padding: 5px;
+  background-color: #09F;
+  color: white;
+  margin-top:10px;
+  font-size: 12px;
+  border-left: 5px solid #03C;
+}
+
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.closebtn:hover {
+  color: black;
+}
+</style>
+<div class="alert">
+  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+  <strong>Notice: </strong> This application is still currently under contstruction, please report any issues to site administrators.
+</div>
 <fieldset><legend>Dashboard</legend>
 </fieldset><br />
 <? } ?>
