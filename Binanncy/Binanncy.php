@@ -981,17 +981,34 @@ if ($_REQUEST['mode'] == 'api_keys') {
 		 $err_msg = "Key already exists on the network.";
 	 } else {
 	 if ($api_key && $api_secret){
+		 
+		 //get key expiry data
+	
+	binance::auth($api_key, $api_secret);
+	$response = binance::call('/sapi/v1/account/apiRestrictions', '');
+	
+$response = binance::call('/sapi/v1/account/apiRestrictions');
+
+$trading_expires = $response['tradingAuthorityExpirationTime'];
+
+$trading_expires = substr($trading_expires, 0, 10);
+
+		 
+		 if ($trading_expires>strtotime("now")){
 	 
 	 $sql = "INSERT INTO $table (time_added, status, wpuid, API_KEY, API_SECRET) VALUES ('".strtotime("now")."', 1, ".$current_user->ID.", '".$api_key."', '".$api_secret."')";
 	 
-	 	$sql = $wpdb->prepare("INSERT INTO ".$table." (time_added, status, wpuid, API_KEY, API_SECRET) VALUES ('%d', 1, %d, '%s', '%s')", array(
+	 	$sql = $wpdb->prepare("INSERT INTO ".$table." (time_added, status, wpuid, API_KEY, API_SECRET, trading_expires) VALUES ('%d', 1, %d, '%s', '%s', '%s')", array(
 		strtotime("now"),
 		$current_user->ID,
 		$api_key,
-		$api_secret
+		$api_secret, 
+		$trading_expires
 	));
 	
 		$wpdb->query($sql);
+		
+
 		
 		if (get_option('autocomms') == 'on'){
 			
@@ -1012,6 +1029,9 @@ if ($_REQUEST['mode'] == 'api_keys') {
 	}
 			
 		}
+		 } else {
+			$err_msg = "Could not get expiry from Binance! - Please check key and try again."; 
+		 }
 		
 	 } else {
 		$err_msg = "Please enter an API key & Secret"; 
@@ -1071,9 +1091,20 @@ Please read over and accept terms before adding API Keys.
 			$hide_key = $this->stringInsert($rec->API_KEY, 'XXXXX', 8);
 			$hide_key = $rec->API_KEY;
 			$linked = $rec->comms_id;
+			
+$rem = $rec->trading_expires - time();
+$day = floor($rem / 86400);
+$hr  = floor(($rem % 86400) / 3600);
+$min = floor(($rem % 3600) / 60);
+$sec = ($rem % 60);
+
+$exp = $day." day(s)";
+if ($exp<1) {
+$exp = $hr." hour(s)";	
+}
 			?>
 <div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="apikey_<? echo $rec->ID; ?>">
-<i class="fa-solid fa-calendar-days"></i> [<? echo date('d/m/y', $rec->time_added); ?>] <? if ($linked <> '') { ?><font color="#00CC00"><i class="fa-solid fa-money-bill-trend-up"></i> Trading Active</font><? } ?><br /><i class="fa-solid fa-key"></i> <? echo $hide_key; ?><br />
+<i class="fa-solid fa-calendar-days"></i> [<? echo date('d/m/y', $rec->time_added); ?>] <i class="fa-solid fa-calendar-xmark"></i> Trading Expires: <b><? echo $exp; ?></b>  <? if ($linked <> '') { ?><font color="#00CC00"><i class="fa-solid fa-money-bill-trend-up"></i> Trading Active</font><? } ?><br /><i class="fa-solid fa-key"></i> <? echo $hide_key; ?><br />
 <div align="center" id="api_sec_<? echo $rec->ID; ?>" style="display:none;">
 <input type="text" class="tbox" readonly="readonly" value="secret..." id="api_sec_box_<? echo $rec->ID; ?>" />&nbsp;<button onclick="cpyPaste('api_sec_box_<? echo $rec->ID; ?>');">Copy</button>
 <br /><br />
@@ -1114,6 +1145,7 @@ if ($_REQUEST['mode'] == 'account_progress') {
 		if ($account_id<1) {
 		$sql = "INSERT INTO $table (account_added, status, wpuid, account_active, user_ref_link, reg_video_stage, forenames, surname) VALUES ('".strtotime("now")."', 1, ".$current_user->ID.", 1, '".$f_reflink."', 0, '".$f_forenames."', '".$f_surname."')";
 		$wpdb->query($sql);	
+		echo $sql;
 		} else {
 		$sql = "UPDATE $table set forenames = '".$f_forenames."', surname = '".$f_surname."', user_ref_link = '".$f_reflink."' where ID=".$account_id." and wpuid=".$current_user->ID;
 		$wpdb->query($sql);
@@ -1277,7 +1309,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL
+        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL, trading_expires VARCHAR(100) DEFAULT NULL
     );";
 
     $wpdb->query($structure);
@@ -1285,7 +1317,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_accounts";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), account_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), account_active INT(9) DEFAULT 1, account_notes LONGTEXT, user_ref_link LONGTEXT, reg_video_stage INT(9) DEFAULT 0, forenames VARCHAR(100), surname VARCHAR(100), terms_accepted INT(9) DEFAULY 0
+        UNIQUE KEY ID (id), account_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), account_active INT(9) DEFAULT 1, account_notes LONGTEXT, user_ref_link LONGTEXT, reg_video_stage INT(9) DEFAULT 0, forenames VARCHAR(100), surname VARCHAR(100), terms_accepted INT(9) DEFAULT 0
     );";
 
     $wpdb->query($structure);
@@ -1905,6 +1937,21 @@ class WPMMThrottle_List extends WP_List_Table {
 		function column_time_added($item){
 			
 				echo date('Y-m-d H:i A', $item['time_added']);
+
+$rem = $item['trading_expires'] - time();
+$day = floor($rem / 86400);
+$hr  = floor(($rem % 86400) / 3600);
+$min = floor(($rem % 3600) / 60);
+$sec = ($rem % 60);
+
+$exp = $day." day(s)";
+if ($exp<1) {
+$exp = $hr." hour(s)";	
+}
+				?>
+                <hr />
+                Expires: <? echo $exp; ?>
+                <?
 		}
 
 		function column_rule_type($item){
