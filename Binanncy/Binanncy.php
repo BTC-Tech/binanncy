@@ -20,6 +20,7 @@ class Binanncy {
     public $showMessage=false;
     public $slug="binanncy";
     function __construct() {
+
         add_action( 'admin_print_styles', [ $this, 'SetAdminStyle' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'SetScripts' ] );
 			add_action('activate_Binanncy/Binanncy.php', [$this,'wpmmInstall']);
@@ -36,6 +37,9 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+//The Following registers an api route with multiple parameters. 
+		add_action('wp_ajax_wpb_delete_file', [$this, 'wpb_delete_file']);
+		add_action('wp_ajax_wpb_export', [$this, 'wpb_export']);
 		add_action('wp_ajax_wpb_sync_commas', [$this, 'wpb_sync_commas']);
 		add_action('wp_ajax_toggle_setting', [$this,'toggle_Setting']);
 		add_action( 'wp_dashboard_setup', [$this, 'wpb_admin_dashboard']);
@@ -74,6 +78,39 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
     }
 // ### CUSTOM FUNCTIONS
 
+
+function wpb_delete_file(){
+	$file = $_REQUEST['file'];
+	
+	unlink($file);
+	wp_die();	
+}
+function wpb_export(){
+	global $wpdb;
+	$table = $wpdb->prefix."binance_API_keys";
+	//check_admin_referer( 'wpmm' );
+	
+	if( current_user_can('administrator')) {
+			//generate new CSV
+	$db = $wpdb->get_results("SELECT localID, wpuid, API_KEY, comms_id from $table");
+	
+	$file = strtotime("now")."_export.csv";
+	
+	$fp = fopen($file, 'w');
+  
+// Loop through file pointer and a line
+foreach ($db as $rec) {
+	$a = array();
+	array_push($a, $rec->localID, $rec->wpuid, $rec->API_KEY, $rec->comms_id);
+	
+}
+    fputcsv($fp, $a);
+	fclose($fp);
+}
+echo $file;
+wp_die();
+	
+}
 function wpb_sync_commas(){
 	global $wpdb;
 	
@@ -1541,7 +1578,7 @@ Auto Add Accounts
 <button class="button" onclick="syncCommas();">Sync With 3Commas</button>
 	`		</div>
                 <div class="col-md-4" style="margin:auto;">
-<button class="button" onclick="">Export Users</button>
+<button class="button" onclick="admExport();">Export Users</button>
 	`		</div>
             
         </div>

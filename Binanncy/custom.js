@@ -12,6 +12,36 @@ function cpyPaste(fld) {
   /* Alert the copied text */
   alert("Copied the text: " + copyText.value);
 } 
+function admExport(){
+jQuery(document).ready(function($) {
+		var data = {
+			'action': 'wpb_export',
+			'_nonce': wpmm.nonce
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					setTimeout(function() {
+						
+						jsDeleteFile(response);
+						
+					}, 10000);
+					document.location.href=response;
+					
+				});	
+});
+}
+function jsDeleteFile(f){
+jQuery(document).ready(function($) {
+		var data = {
+			'action': 'wpb_delete_file',
+			'file': f
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					
+				});	
+});	
+}
 function syncCommas(){
 jQuery(document).ready(function($) {
 		var data = {
