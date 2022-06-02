@@ -115,7 +115,7 @@ function binanncy_sync_comma(){
 		
 	if (!$result->error) {
 			$commsID = $result->id;
-		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$key);	
+		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$key);	
 		?>
                  <br><i class="fa-solid fa-link"></i>
                  <?
@@ -197,7 +197,7 @@ function wpmm_admin_deletekey(){
 		
 if( current_user_can('administrator')) { 
 		//check if we can delete
-		$comms_id = $wpdb->get_var("select 3comms_id from $table where ID=".$apikey);
+		$comms_id = $wpdb->get_var("select comms_id from $table where ID=".$apikey);
 		
 		if ($comms_id <> '') {
 			
@@ -338,7 +338,7 @@ function wpmm_delete_api(){
 if ($current_user->ID>0){
 	
 	// get key info to delete
-		$comms_id = $wpdb->get_var("select 3comms_id from $table where ID=".$_REQUEST['apikey']);
+		$comms_id = $wpdb->get_var("select comms_id from $table where ID=".$_REQUEST['apikey']);
 		
 		if ($comms_id <> '') {
 			
@@ -922,6 +922,15 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
 //handle the adding API form data....
 
 if ($_REQUEST['mode'] == 'api_keys') {
+	if ($_REQUEST['terms'] == 1){ 
+	
+			//mark terms accspted
+			$err_msg = 'Thank You, you can now add API keys.';
+			
+			  $table = $wpdb->prefix."binance_API_accounts";
+			  
+			$wpdb->query("update $table set terms_accepted=1 where wpuid=".$current_user->ID);
+	}
  if ($_REQUEST['action'] == 'adding_api') {
 	 
 	 //get form data
@@ -962,7 +971,7 @@ if ($_REQUEST['mode'] == 'api_keys') {
 		
 	if (!$result->error) {
 			$commsID = $result->id;
-		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$keyID);	
+		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$keyID);	
 	}
 			
 		}
@@ -977,11 +986,24 @@ if ($_REQUEST['mode'] == 'api_keys') {
 	 
  }
  ?>
- <? if ($err_msg <> '') { ?><div id="err_msg"></div><? } ?>
+ <? if ($err_msg <> '') { ?><div id="err_msg"></div><? } 
+  $table = $wpdb->prefix."binance_API_accounts";
+ $accepted_terms = $wpdb->get_var("select terms_accepted from $table where wpuid=".$current_user->ID) ?? 0;
+ ?>
 <fieldset><legend>API Keys</legend>
 You can add/remove API keys anytime live here in your dashboard. You can also turn them on and off at anytime to stop them being used. <a href="javascript:;" onclick="addKey();">Add New Key</a>
 </fieldset><br />
 <div id="add_new_key" style="display:none;">
+<? if (!$accepted_terms) { ?>
+Please read over and accept terms before adding API Keys.
+<div align="center">
+<textarea rows="5" style="width: 100%">Market Vision is not your broker, intermediary, agent, or advisor and has no fiduciary relationship or obligation to you in connection with any trades or other decisions or activities effected by you using Market Vision Services. No communication or information provided to you by Market Vision is intended as, or shall be considered or construed as, investment advice, financial advice, trading advice, or any other sort of advice. All trades are executed automatically, based on the parameters of your order instructions and in accordance with posted trade execution procedures, and you are solely responsible for determining whether any investment, investment strategy or related transaction is appropriate for you according to your personal investment objectives, financial circumstances and risk tolerance, and you shall be solely responsible for any loss or liability therefrom. You should consult legal or tax professionals regarding your specific situation. Market Vision does not recommend that any Digital Asset should be bought, earned, sold, or held by you. Before making the decision to buy, sell or hold any Digital Asset, you should conduct your own due diligence and consult your financial advisors prior to making any investment decision. Market Vision will not be held responsible for the decisions you make to buy, sell, or hold Digital Asset based on the information provided by Market Vision</textarea><br /><br />
+<form method="post" action="">
+<input type="hidden" name="terms" id="terms" value="1" />
+<button class="button button-primary">Accept Terms</button>
+</form>
+</div>
+<? } else { ?>
 <? if ($account_status<1 || $video_stage < 4) { ?>
 <div class="accountdiv">
 <img src="<?php echo esc_url(plugins_url('/images/alarm.png', __FILE__)); ?>" width="24px" /></a> Complete all required steps to start adding API keys.
@@ -995,10 +1017,12 @@ You can add/remove API keys anytime live here in your dashboard. You can also tu
 <input type="text" id="api_key" name="api_key" placeholder="Enter your API Key..." /> <input type="text" id="api_secret" name="api_secret" placeholder="API Secret Key..." /> <button <? if ($account_status<1 || $video_stage < 4) { ?> disabled="disabled"<? } ?>>Add API Key</button><br /><? if ($err_msg <> '') { ?><div id="err"><? echo $err_msg; ?></div><? } ?>
 </form>
 </div>
-</fieldset>
+</fieldset><? } ?>
 </div>
+
 <br />
 <?
+
 		$table = $wpdb->prefix."binance_API_keys";
 		
 		$sql = "SELECT * FROM $table where wpuid=".$current_user->ID;
@@ -1009,9 +1033,10 @@ You can add/remove API keys anytime live here in your dashboard. You can also tu
 			$hide_key = substr($rec->API_KEY, 0, 10);
 			$hide_key = $this->stringInsert($rec->API_KEY, 'XXXXX', 8);
 			$hide_key = $rec->API_KEY;
+			$linked = $rec->comms_id;
 			?>
 <div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="apikey_<? echo $rec->ID; ?>">
-<i class="fa-solid fa-calendar-days"></i> [<? echo date('d/m/y', $rec->time_added); ?>] <i class="fa-solid fa-key"></i> <? echo $hide_key; ?><br />
+<i class="fa-solid fa-calendar-days"></i> [<? echo date('d/m/y', $rec->time_added); ?>] <? if ($linked <> '') { ?><font color="#00CC00"><i class="fa-solid fa-money-bill-trend-up"></i> Trading Active</font><? } ?><br /><i class="fa-solid fa-key"></i> <? echo $hide_key; ?><br />
 <div align="center" id="api_sec_<? echo $rec->ID; ?>" style="display:none;">
 <input type="text" class="tbox" readonly="readonly" value="secret..." id="api_sec_box_<? echo $rec->ID; ?>" />&nbsp;<button onclick="cpyPaste('api_sec_box_<? echo $rec->ID; ?>');">Copy</button>
 <br /><br />
@@ -1215,7 +1240,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, 3comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL
+        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL
     );";
 
     $wpdb->query($structure);
@@ -1223,7 +1248,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_accounts";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), account_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), account_active INT(9) DEFAULT 1, account_notes LONGTEXT, user_ref_link LONGTEXT, reg_video_stage INT(9) DEFAULT 0, forenames VARCHAR(100), surname VARCHAR(100)
+        UNIQUE KEY ID (id), account_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), account_active INT(9) DEFAULT 1, account_notes LONGTEXT, user_ref_link LONGTEXT, reg_video_stage INT(9) DEFAULT 0, forenames VARCHAR(100), surname VARCHAR(100), terms_accepted INT(9) DEFAULY 0
     );";
 
     $wpdb->query($structure);
@@ -1515,6 +1540,9 @@ Auto Add Accounts
             <div class="col-md-4" style="margin:auto;">
 <button class="button" onclick="syncCommas();">Sync With 3Commas</button>
 	`		</div>
+                <div class="col-md-4" style="margin:auto;">
+<button class="button" onclick="">Export Users</button>
+	`		</div>
             
         </div>
     </div>
@@ -1799,12 +1827,12 @@ class WPMMThrottle_List extends WP_List_Table {
 			echo "<b>".$user_info->user_login."</b><br>";
 			echo $user_info->first_name." ".$user_info->last_name;
 		 if(class_exists('commas')){
-			 if ($item['3comms_id']) {
+			 if ($item['comms_id']) {
 				 ?>
                  <div id="comma_<? echo $item['ID']; ?>">
                  <br><i class="fa-solid fa-link"></i>
                  <?
-			 echo " 3Commas ID: <b>{$item['3comms_id']}</b></br>Ref: <b>{$item['localID']}</b></div>";
+			 echo " 3Commas ID: <b>{$item['comms_id']}</b></br>Ref: <b>{$item['localID']}</b></div>";
 			 } else {
 				 ?>
 				<div id="comma_<? echo $item['ID']; ?>"><br><i class="fa-solid fa-link-slash"></i> No Link To 3Commas Yet.</div>
