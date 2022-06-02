@@ -331,8 +331,8 @@ if ($current_user->ID>0){
 		$table = $wpdb->prefix."binance_API_keys";
 	$api_key = $wpdb->get_var("SELECT API_KEY from $table where wpuid=".$current_user->ID." AND ID=".$apikey);
 	$api_secret = $wpdb->get_var("SELECT API_SECRET from $table where wpuid=".$current_user->ID." AND ID=".$apikey);
-
- if (get_option('wpmm_api_enabled') == 'on') {
+$enabled = true;
+ if ($enabled) {
 
 binance::auth($api_key, $api_secret);
 
@@ -773,7 +773,6 @@ $table = $wpdb->prefix."binance_API_keys";
 	$api_key = $wpdb->get_var("SELECT API_KEY from $table where wpuid=".$current_user->ID." AND ID=".$keyID);
 	$api_secret = $wpdb->get_var("SELECT API_SECRET from $table where wpuid=".$current_user->ID." AND ID=".$keyID);
 
- if (get_option('wpmm_api_enabled') == 'on') {
 
 binance::auth($api_key, $api_secret);
 
@@ -865,7 +864,7 @@ echo $dt->format('Y-m-d H:i:s'); // output = 2012-08-15 00:00:00
  $dt = new DateTime("@$epoch");
  $etime = $dt->format('Y-m-d H:i A');
  $etime = date("Y-m-d H:i A", substr($iTime, 0, 10));
- } 
+ 
 ?>
 <div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="stat_apikey_<? echo $rec->ID; ?>">
 <img src="<?php echo esc_url(plugins_url('/images/api.png', __FILE__)); ?>" width="24px" /> [<? echo date('d/m/y', $intTime); ?>] <? echo $intAPIKey; ?><hr />
@@ -1267,7 +1266,8 @@ function filter_plugin_row_meta( array $plugin_meta, $plugin_file ) {
 }
 function wpmm_testtheapi(){
 	global $wpdb;
- if (get_option('wpmm_api_enabled') == 'on') {
+	$enabled = true;
+ if ($enabled) {
 	 $table = $wpdb->prefix."WPMailMon_counters";
 	$wpdb->query("UPDATE ".$table." set throttle_counter_day=throttle_counter_day +1");
 	$your_key = "HJvQ334CyPrNWSY6rC6ZVDrdJRAZa8LocKU99wqIG85eJeeyI4qgz61gkqvRY75q";
