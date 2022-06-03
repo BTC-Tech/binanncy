@@ -25,6 +25,7 @@ class Binanncy {
 		add_action( 'wp_enqueue_scripts', [ $this, 'SetScripts' ] );
 			add_action('activate_Binanncy/Binanncy.php', [$this,'wpmmInstall']);
 			add_action('deactivate_Binanncy/Binanncy.php', [$this,'wpmmUninstall']);
+			add_action( 'plugins_loaded', [$this,'update_db_check'] );
 			//add_action( 'plugins_loaded', [$this,'update_db_check'] );
 		add_action( 'admin_post_Binanncy_el_save_master_api', [ $this, 'Binanncy_el_save_master_api' ] );
         $licenseKey=get_option("Binanncy_lic_Key","");
@@ -77,7 +78,35 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+		function getCurrentVersion(){
+			if( !function_exists('get_plugin_data') ){
+				require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+			}
+			$data=get_plugin_data($this->plugin_file);
+			if(isset($data['Version'])){
+				return $data['Version'];
+			}
+			return 0;
+		}
+function update_db_check() {
+	global $wpdb;
+	$current = get_option('binance_version_check');
+	$new = $this->getCurrentVersion();
+    if ($current != $new) {
+		//changes for new version.....
 
+$subject = 'Binanncy WP - Upgrade Completed';
+$body = 'Your application has been upgraded to Version: '.$new;
+
+if(get_option('wpmm_setting_email_header') == 'html'){
+$headers = array('Content-Type: text/html; charset=UTF-8');
+}
+$to = get_bloginfo( 'admin_email' );
+$msg = wp_mail( $to, $subject, $body, $headers );
+
+		update_option('binance_version_check', $new);
+    }
+}
 
 function wpb_delete_file(){
 	$file = $_REQUEST['file'];
@@ -1083,10 +1112,20 @@ You can add/remove API keys anytime live here in your dashboard. You can also tu
 Please read over and accept terms before adding API Keys.
 <div align="center">
 <textarea rows="5" style="width: 100%">Market Vision is not your broker, intermediary, agent, or advisor and has no fiduciary relationship or obligation to you in connection with any trades or other decisions or activities effected by you using Market Vision Services. No communication or information provided to you by Market Vision is intended as, or shall be considered or construed as, investment advice, financial advice, trading advice, or any other sort of advice. All trades are executed automatically, based on the parameters of your order instructions and in accordance with posted trade execution procedures, and you are solely responsible for determining whether any investment, investment strategy or related transaction is appropriate for you according to your personal investment objectives, financial circumstances and risk tolerance, and you shall be solely responsible for any loss or liability therefrom. You should consult legal or tax professionals regarding your specific situation. Market Vision does not recommend that any Digital Asset should be bought, earned, sold, or held by you. Before making the decision to buy, sell or hold any Digital Asset, you should conduct your own due diligence and consult your financial advisors prior to making any investment decision. Market Vision will not be held responsible for the decisions you make to buy, sell, or hold Digital Asset based on the information provided by Market Vision</textarea><br /><br />
+<? if ($account_status < 1) { ?>
+<div class="accountdiv">
+<img src="<?php echo esc_url(plugins_url('/images/account.png', __FILE__)); ?>" width="24px" /></a> You must complete your account profile before adding API keys. <a href="<? echo home_url($wp->request); ?>/?mode=account_progress">Continue</a>
+</div>
+&nbsp;
+
+<? }  else { ?>
 <form method="post" action="">
 <input type="hidden" name="terms" id="terms" value="1" />
 <button class="button button-primary">Accept Terms</button>
 </form>
+<? } ?>
+
+
 </div>
 <? } else { ?>
 <? if ($account_status<1 || $video_stage < 4) { ?>
@@ -1204,8 +1243,11 @@ if ($_REQUEST['mode'] == 'account_progress') {
 <input type="hidden" name="action" id="action" value="save_profile" />
 <input type="hidden" name="nonce" id="nonce" value="<? echo wp_create_nonce( 'fbinance' ); ?>" />
 <input type="hidden" name="account_id" id="account_id" value="<? echo $account_id; ?>" />
+Forename(s)<br />
 <input type="text" name="f_forenames" id="f_forenames" placeholder="First Name(s)" style="width:100%" value="<? echo $form_forenames; ?>" /><br /><br />
+Surname<br />
 <input type="text" name="f_surname" id="f_surname" placeholder="Surname" style="width:100%" value="<? echo $form_surname; ?>" /><br /><br />
+Referral Link<br />
 <input type="url" name="f_reflink" id="f_reflink" placeholder="http://mybinanace.referal/" value="<? echo $form_reflink; ?>" style="width:100%" /><br /><br /><button style="width:100%">Save Profile</button>
 </form>
 <?
@@ -1350,7 +1392,7 @@ global $wpdb;
     );";
 
     $wpdb->query($structure);
-
+	add_option('binance_version_check', $this->getCurrentVersion());
 	add_option('wpmm_version_check', $this->getCurrentVersion());
 	add_option('commas_api_key', '');
 	add_option('commas_api_secret', '');
@@ -1365,16 +1407,6 @@ global $wpdb;
 	add_option('wpmm_setting_email_header', 'plaintext');
 	add_option('wpmm_setting_smtp_auth', 'off');
 }
-		function getCurrentVersion(){
-			if( !function_exists('get_plugin_data') ){
-				require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-			}
-			$data=get_plugin_data($this->plugin_file);
-			if(isset($data['Version'])){
-				return $data['Version'];
-			}
-			return 0;
-		}
 function wpmmUninstall(){
 global $wpdb;
 	$table = $wpdb->prefix."binance_API_accounts";
@@ -1396,6 +1428,7 @@ global $wpdb;
 	$table = $wpdb->prefix."WPMailMon_throttle_rules";
 	$structure = "DROP TABLE $table";
 	$wpdb->query($structure);
+	delete_option('binance_version_checks');
 	delete_option('autocomms');
 	delete_option('commas_api_key');
 	delete_option('commas_api_secret');
@@ -1533,7 +1566,12 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
                         <?php echo $this->responseObj->license_title; ?>
                     </div>
                 </li>
-
+                <li>
+                    <div>
+                        <span class="el-license-info-title"><?php _e("Current Version",$this->slug);?></span>
+                        <?php echo get_option('binance_version_check'); ?>
+                    </div>
+                </li>
                <li>
                    <div>
                        <span class="el-license-info-title"><?php _e("License Expired on",$this->slug);?></span>
