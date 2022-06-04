@@ -7,6 +7,7 @@ function toggle_e(elem){
 jQuery(document).ready(function($) {
 	$("#t1").hide();
 	$("#t2").hide();
+	$("#t3").hide();
 	$('#'+elem).slideToggle();
 });
 }

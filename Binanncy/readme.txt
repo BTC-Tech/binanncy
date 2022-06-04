@@ -45,3 +45,6 @@ New release with CRON jobs and automated email notifications.
 New database tables for email templates.
 = 2.0.2 =
 New dynamic email templates.
+= 2.0.3 =
+New email template for user confirmatiion on going live with API
+New function to follow.

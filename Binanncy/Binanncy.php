@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.0.2
+Version: 2.0.3
 */
 require_once "class_commas.php";
 
@@ -210,20 +210,6 @@ function update_db_check() {
 	$new = $this->getCurrentVersion();
     if ($current != $new) {
 		//changes for new version.....
-		
-	$table = $wpdb->prefix."binance_auto_emails";
-    $structure = "CREATE TABLE $table (
-        ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), e_function VARCHAR(50), e_subject VARCHAR(100), e_message LONGTEXT
-    );";
-
-    $wpdb->query($structure);
-	
-	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('new_link')");
-	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('key_expired')");
-	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_day')");
-	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_day')");
-		
 	
 		update_option('binance_version_check', $new);
     }
@@ -1876,6 +1862,32 @@ Auto Add Accounts
 <button class="button" onclick="toggle_e('t1');">New Key</button>&nbsp;<button class="button" onclick="toggle_e('t2');">Key Expired</button>&nbsp;<button class="button" onclick="toggle_e('t3');">Confirm Trading</button>
 <div id="t3" style="display:none;">
 <hr />
+<style>
+.alert {
+  padding: 20px;
+  background-color: #f44336;
+  color: white;
+}
+
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.closebtn:hover {
+  color: black;
+}
+</style>
+<div class="alert">
+  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+  <strong>Notice: </strong> This template is not currently in use. (Under Construction.)
+</div>
 <form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 <input type="hidden" name="action" id="action" value="save_email_template" />
 <input type="hidden" name="template" id="template" value="trading_confirm" />
