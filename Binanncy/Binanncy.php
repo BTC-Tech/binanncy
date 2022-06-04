@@ -38,7 +38,10 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
-//The Following registers an api route with multiple parameters. 
+			add_action( 'wpmm_cron_hook_day', [$this,'cron_exec_day']);
+			if ( ! wp_next_scheduled( 'wpmm_cron_hook_day' ) ) {
+    wp_schedule_event( time(), 'daily', 'wpmm_cron_hook_day' );
+}
 		add_action('wp_ajax_wpb_delete_file', [$this, 'wpb_delete_file']);
 		add_action('wp_ajax_wpb_export', [$this, 'wpb_export']);
 		add_action('wp_ajax_wpb_sync_commas', [$this, 'wpb_sync_commas']);
@@ -78,6 +81,48 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+
+		function cron_exec_day(){
+
+/*
+$subject = 'Binanncy WP - Cron Job Daily';
+$body = 'Cron job has run complete success.';
+$headers = array('Content-Type: text/html; charset=UTF-8');
+
+$to = get_bloginfo( 'admin_email' );
+$msg = wp_mail( $to, $subject, $body, $headers );
+*/
+
+		global $wpdb;
+		$table = $wpdb->prefix."binance_API_keys";
+		
+		$db = $wpdb->get_results("SELECT * FROM $table where key_linked_email<1 and comms_id <>''");
+		
+		foreach($db as $rec){
+			$wpdb->query("update $table set key_linked_email=1 where ID=".$rec->ID);
+		//try to link each record
+		$api_key = $rec->API_KEY;
+		$wpuid = $rec->wpuid;
+		$trading_expires = $rec->trading_expires;
+		$trading_expires = substr($trading_expires, 0, 10);
+
+		$usr = get_userdata($wpuid);
+		$temptime = date('Y-m-d H:i A', $trading_expires);
+		//now send email to user to let them know
+		//we have added key to the 3comms system.
+		
+$subject = 'Market-Vision - API Key live on copy-trading.';
+$body = 'Hello '.$usr->display_name.', <br>';
+$body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live trading platform.<br><br>';
+$body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
+$headers = array('Content-Type: text/html; charset=UTF-8');
+
+$to = $usr->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );
+		}
+
+			
+		}
 		function getCurrentVersion(){
 			if( !function_exists('get_plugin_data') ){
 				require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -171,6 +216,9 @@ function binanncy_sync_comma(){
 	
 	$api_key = $wpdb->get_var("SELECT API_KEY from $table where ID=".$key);
 	$api_secret = $wpdb->get_var("SELECT API_SECRET FROM $table where ID=".$key);
+	$wpuid = $wpdb->get_var("SELECT wpuid FROM $table where ID=".$key);
+	$trading_expires = $wpdb->get_var("SELECT trading_expires FROM $table where ID=".$key);
+	$trading_expires = substr($trading_expires, 0, 10);
 	
 	//use new class to create the account...
 	$comma = new commas();
@@ -181,7 +229,20 @@ function binanncy_sync_comma(){
 		
 	if (!$result->error) {
 			$commsID = $result->id;
-		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$key);	
+		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$key);
+		$usr = get_userdata($wpuid);
+			$temptime = date('Y-m-d H:i A', $trading_expires);
+		//now send email to user to let them know
+		//we have added key to the 3comms system.
+		
+$subject = 'Market-Vision - API Key live on copy-trading.';
+$body = 'Hello '.$usr->display_name.', <br>';
+$body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live trading platform.<br><br>';
+$body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
+$headers = array('Content-Type: text/html; charset=UTF-8');
+
+$to = $usr->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );
 		?>
                  <br><i class="fa-solid fa-link"></i>
                  <?
@@ -1082,7 +1143,19 @@ $trading_expires = substr($trading_expires, 0, 10);
 		
 	if (!$result->error) {
 			$commsID = $result->id;
-		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$keyID);	
+		$wpdb->query("update $table set localID = '{$account}', comms_id = '{$commsID}' where ID=".$keyID);
+		$temptime = date('Y-m-d H:i A', $trading_expires);
+		//now send email to user to let them know
+		//we have added key to the 3comms system.
+		
+$subject = 'Market-Vision - API Key live on copy-trading.';
+$body = 'Hello '.$current_user->display_name.', <br>';
+$body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live trading platform.<br><br>';
+$body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
+$headers = array('Content-Type: text/html; charset=UTF-8');
+
+$to = $current_user->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );			
 	}
 			
 		}
@@ -1380,7 +1453,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL, trading_expires VARCHAR(100) DEFAULT NULL
+        UNIQUE KEY ID (id), time_added VARCHAR(100), status VARCHAR(50), wpuid INT(9), API_KEY VARCHAR(100), API_SECRET VARCHAR(100), 3comms_sync INT(9) DEFAULT 0, comms_id VARCHAR(100) DEFAULT NULL, localID VARCHAR(100) DEFAULT NULL, trading_expires VARCHAR(100) DEFAULT NULL, key_linked_email INT(9) DEFAULT 0
     );";
 
     $wpdb->query($structure);

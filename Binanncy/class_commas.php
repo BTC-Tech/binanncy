@@ -28,6 +28,9 @@ class commas {
 		$account = get_option('commas_prefix').strtotime("now");
 		$api_key = $rec->API_KEY;
 		$api_secret = $rec->API_SECRET;
+	$wpuid = $rec->wpuid;
+	$trading_expires = $rec->trading_expires;
+	$trading_expires = substr($trading_expires, 0, 10);
 		$result = $comma->createAccount($account, $api_key, $api_secret);
 	
 	$result = json_decode($result);
@@ -35,6 +38,21 @@ class commas {
 	if (!$result->error) {
 			$commsID = $result->id;
 		$wpdb->query("update $table set localID = '{$account}', 3comms_id = '{$commsID}' where ID=".$rec->ID);	
+		
+		$usr = get_userdata($wpuid);
+			$temptime = date('Y-m-d H:i A', $trading_expires);
+		//now send email to user to let them know
+		//we have added key to the 3comms system.
+		
+$subject = 'Market-Vision - API Key live on copy-trading.';
+$body = 'Hello {$usr->display_name}, <br>';
+$body = $body.'Your API key - <b>{$api_key}</b> has been added to our live trading platform.<br><br>';
+$body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>{$temptime}</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
+$headers = array('Content-Type: text/html; charset=UTF-8');
+
+$to = $usr->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );
+
 	}
 		
 		}
