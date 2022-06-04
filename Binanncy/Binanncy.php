@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 1.1.5
+Version: 2.0.0
 */
 require_once "class_commas.php";
 
@@ -139,6 +139,11 @@ function update_db_check() {
 	$new = $this->getCurrentVersion();
     if ($current != $new) {
 		//changes for new version.....
+		
+		//alter table for key_linked_email
+		$table = $wpdb->prefix."binance_API_keys";
+		
+		$wpdb->query("ALTER $table ADD key_linked_email INT(9) DEFAULT 0 AFTER ID");		
 
 $subject = 'Binanncy WP - Upgrade Completed';
 $body = 'Your application has been upgraded to Version: '.$new;

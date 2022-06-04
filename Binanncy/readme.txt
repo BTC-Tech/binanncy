@@ -39,3 +39,5 @@ Cleaned up Admin area and functions.
 Added 3commas sync accounts button on dashboard and admin area
 = 1.1.5 =
 Bug fixes release
+= 2.0.0 =
+New release with CRON jobs and automated email notifications.
