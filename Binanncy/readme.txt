@@ -41,3 +41,5 @@ Added 3commas sync accounts button on dashboard and admin area
 Bug fixes release
 = 2.0.0 =
 New release with CRON jobs and automated email notifications.
+= 2.0.1 =
+New database tables for email templates.

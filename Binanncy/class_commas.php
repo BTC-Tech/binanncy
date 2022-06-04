@@ -45,9 +45,22 @@ class commas {
 		//we have added key to the 3comms system.
 		
 $subject = 'Market-Vision - API Key live on copy-trading.';
+
 $body = 'Hello {$usr->display_name}, <br>';
 $body = $body.'Your API key - <b>{$api_key}</b> has been added to our live trading platform.<br><br>';
 $body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>{$temptime}</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
+
+//new $body from DB
+
+$table = $wpdb->prefix."binance_auto_emails";
+
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");
+
+$body = str_replace('[member]', $usr->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+$body = str_replace('[expiry_date]', $temptime, $body);
+
+
 $headers = array('Content-Type: text/html; charset=UTF-8');
 
 $to = $usr->user_email;

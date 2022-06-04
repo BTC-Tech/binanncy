@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.0.0
+Version: 2.0.1
 */
 require_once "class_commas.php";
 
@@ -38,6 +38,7 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+			add_action('admin_post_save_email_template', [$this, 'save_email_template']);
 			add_action( 'wpmm_cron_hook_day', [$this,'cron_exec_day']);
 			if ( ! wp_next_scheduled( 'wpmm_cron_hook_day' ) ) {
     wp_schedule_event( time(), 'daily', 'wpmm_cron_hook_day' );
@@ -81,7 +82,28 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
-
+		function save_email_template(){
+			global $wpdb;
+			$table = $wpdb->prefix."binance_auto_emails";
+				check_admin_referer( 'binance' );
+				
+	if( current_user_can('administrator')) {
+		
+		$email_template = $_REQUEST['e_template_newlink'];
+		$email_function = $_REQUEST['template'];
+		
+		$wpdb->query("update $table set e_message = '
+		".$email_template."' where e_function = '".$email_function."'");
+		
+		
+		
+		
+			wp_safe_redirect(admin_url( 'admin.php?page='.$this->slug.'&s=success'));
+	
+}
+			
+		}
+		
 		function cron_exec_day(){
 
 /*
@@ -117,6 +139,14 @@ $body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live tra
 $body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
 $headers = array('Content-Type: text/html; charset=UTF-8');
 
+$table = $wpdb->prefix."binance_auto_emails";
+
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");
+
+$body = str_replace('[member]', $usr->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+$body = str_replace('[expiry_date]', $temptime, $body);
+
 $to = $usr->user_email;
 $msg = wp_mail( $to, $subject, $body, $headers );
 		}
@@ -140,22 +170,11 @@ function update_db_check() {
     if ($current != $new) {
 		//changes for new version.....
 		
-		//alter table for key_linked_email
-		$table = $wpdb->prefix."binance_API_keys";
-		
-		$wpdb->query("ALTER $table ADD key_linked_email INT(9) DEFAULT 0 AFTER ID");		
-
-$subject = 'Binanncy WP - Upgrade Completed';
-$body = 'Your application has been upgraded to Version: '.$new;
-
-if(get_option('wpmm_setting_email_header') == 'html'){
-$headers = array('Content-Type: text/html; charset=UTF-8');
-}
-$to = get_bloginfo( 'admin_email' );
-$msg = wp_mail( $to, $subject, $body, $headers );
-
+	
 		update_option('binance_version_check', $new);
     }
+	
+	//end of function updates
 }
 
 function wpb_delete_file(){
@@ -210,6 +229,7 @@ wp_die();
 function binanncy_sync_comma(){
 	check_admin_referer( 'wpmm' );
 	
+	
 	$key = sanitize_text_field($_REQUEST['apikey']);
 	global $wpdb;
 	
@@ -245,6 +265,14 @@ $body = 'Hello '.$usr->display_name.', <br>';
 $body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live trading platform.<br><br>';
 $body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
 $headers = array('Content-Type: text/html; charset=UTF-8');
+
+$table = $wpdb->prefix."binance_auto_emails";
+
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");
+
+$body = str_replace('[member]', $usr->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+$body = str_replace('[expiry_date]', $temptime, $body);
 
 $to = $usr->user_email;
 $msg = wp_mail( $to, $subject, $body, $headers );
@@ -1159,6 +1187,14 @@ $body = $body.'Your API key - <b>'.$api_key.'</b> has been added to our live tra
 $body = $body.'Please note trading API keys expire every 90 days your key is due to expire on <b>'.$temptime.'</b>, we will notify you nearer the time to renew or replace your API key.<br><br>Kind Regards, Market-Vision';
 $headers = array('Content-Type: text/html; charset=UTF-8');
 
+$table = $wpdb->prefix."binance_auto_emails";
+
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");
+
+$body = str_replace('[member]', $current_user->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+$body = str_replace('[expiry_date]', $temptime, $body)
+
 $to = $current_user->user_email;
 $msg = wp_mail( $to, $subject, $body, $headers );			
 	}
@@ -1463,6 +1499,21 @@ global $wpdb;
 
     $wpdb->query($structure);
 	
+		//add new table for email settings
+		
+	$table = $wpdb->prefix."binance_auto_emails";
+    $structure = "CREATE TABLE $table (
+        ID INT(9) NOT NULL AUTO_INCREMENT,
+        UNIQUE KEY ID (id), e_function VARCHAR(50), e_subject VARCHAR(100), e_message LONGTEXT
+    );";
+
+    $wpdb->query($structure);
+	
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('new_link')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('key_expired')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_day')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_day')");
+	
 	$table = $wpdb->prefix."binance_API_accounts";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
@@ -1619,6 +1670,7 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
         wp_safe_redirect(admin_url( 'admin.php?page='.$this->slug));
     }
     function Activated(){
+		global $wpdb;
         ?>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="Binanncy_el_deactivate_license"/>
@@ -1689,6 +1741,34 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
                 </div>
             </div>
         </form>
+
+<div class="el-license-container">
+<h4>Email Templates</h4>
+<button class="button" onclick="toggle('t1');">New Key</button>
+<div id="t1" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="new_link" />
+        <?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");;
+$custom_editor_id = "e_template_newlink";
+$custom_editor_name = "e_template_newlink";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+     
+</div>
     <?php
 	// NEW ADMIN AREA
 //test mail
@@ -1884,6 +1964,7 @@ $errors = $wpdb->get_var("SELECT error_count from ".$table." where ID>0");
                 <div><small><?php _e("We will send update news of this product by this email address, don't worry, we hate spam",$this->slug);?></small></div>
             </div>
             <div class="el-license-active-btn">
+            
                 <?php wp_nonce_field( 'el-license' ); ?>
                 <?php submit_button('Activate'); ?>
             </div>

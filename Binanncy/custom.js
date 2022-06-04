@@ -1,3 +1,8 @@
+function toggle(elem){
+jQuery(document).ready(function($) {
+	$('#'+elem).slideToggle();
+});
+}
 function cpyPaste(fld) {
   /* Get the text field */
   var copyText = document.getElementById(fld);
