@@ -43,3 +43,5 @@ Bug fixes release
 New release with CRON jobs and automated email notifications.
 = 2.0.1 =
 New database tables for email templates.
+= 2.0.2 =
+New dynamic email templates.

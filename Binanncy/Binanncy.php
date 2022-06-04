@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.0.1
+Version: 2.0.2
 */
 require_once "class_commas.php";
 
@@ -38,6 +38,7 @@ class Binanncy {
             add_action( 'admin_post_Binanncy_el_deactivate_license', [ $this, 'action_deactivate_license' ] );
             //$this->licenselMessage=$this->mess;
             //***Write you plugin's code here***
+			add_filter( 'tiny_mce_before_init', [$this, 'my_format_TinyMCE'] );
 			add_action('admin_post_save_email_template', [$this, 'save_email_template']);
 			add_action( 'wpmm_cron_hook_day', [$this,'cron_exec_day']);
 			if ( ! wp_next_scheduled( 'wpmm_cron_hook_day' ) ) {
@@ -82,6 +83,29 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+function my_format_TinyMCE( $in ) {
+	$in['remove_linebreaks'] = false;
+	$in['gecko_spellcheck'] = false;
+	$in['keep_styles'] = true;
+	$in['accessibility_focus'] = true;
+	$in['tabfocus_elements'] = 'major-publishing-actions';
+	$in['media_strict'] = false;
+	$in['paste_remove_styles'] = false;
+	$in['paste_remove_spans'] = false;
+	$in['paste_strip_class_attributes'] = 'none';
+	$in['paste_text_use_dialog'] = true;
+	$in['wpeditimage_disable_captions'] = true;
+	$in['plugins'] = 'tabfocus,paste,media,fullscreen,wordpress,wpeditimage,wpgallery,wplink,wpdialogs';
+	$in['wpautop'] = true;
+	$in['apply_source_formatting'] = false;
+        $in['block_formats'] = "Paragraph=p; Heading 3=h3; Heading 4=h4";
+	$in['toolbar1'] = 'bold,italic,strikethrough,bullist,numlist,blockquote,hr,alignleft,aligncenter,alignright,link,unlink,wp_more,spellchecker,wp_fullscreen,wp_adv ';
+	$in['toolbar2'] = 'formatselect,underline,alignjustify,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help ';
+	$in['toolbar3'] = '';
+	$in['toolbar4'] = '';
+	return $in;
+}
+
 		function save_email_template(){
 			global $wpdb;
 			$table = $wpdb->prefix."binance_auto_emails";
@@ -89,13 +113,30 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
 				
 	if( current_user_can('administrator')) {
 		
-		$email_template = $_REQUEST['e_template_newlink'];
 		$email_function = $_REQUEST['template'];
 		
+		
+		switch ($email_function){
+			
+			case "trading_confirm";
+		$email_template = $_REQUEST['e_template_trading_confirm'];
+		$subject = $_REQUEST['subject_trading_confirm'];
+		
+		break;
+			case "new_link";
+		$email_template = $_REQUEST['e_template_newlink'];
+		$subject = $_REQUEST['subject_new_link'];
+		
+		break;
+			
+			case "key_expired";
+		$email_template = $_REQUEST['e_template_key_expired'];
+		$subject = $_REQUEST['subject_key_expired'];
+		break;
+			
+		}
 		$wpdb->query("update $table set e_message = '
-		".$email_template."' where e_function = '".$email_function."'");
-		
-		
+		".$email_template."', e_subject = '".$subject."' where e_function = '".$email_function."'");
 		
 		
 			wp_safe_redirect(admin_url( 'admin.php?page='.$this->slug.'&s=success'));
@@ -169,6 +210,19 @@ function update_db_check() {
 	$new = $this->getCurrentVersion();
     if ($current != $new) {
 		//changes for new version.....
+		
+	$table = $wpdb->prefix."binance_auto_emails";
+    $structure = "CREATE TABLE $table (
+        ID INT(9) NOT NULL AUTO_INCREMENT,
+        UNIQUE KEY ID (id), e_function VARCHAR(50), e_subject VARCHAR(100), e_message LONGTEXT
+    );";
+
+    $wpdb->query($structure);
+	
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('new_link')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('key_expired')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_day')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_day')");
 		
 	
 		update_option('binance_version_check', $new);
@@ -1513,6 +1567,7 @@ global $wpdb;
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('key_expired')");
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_day')");
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_day')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('trading_confirm')");
 	
 	$table = $wpdb->prefix."binance_API_accounts";
     $structure = "CREATE TABLE $table (
@@ -1741,34 +1796,6 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
                 </div>
             </div>
         </form>
-
-<div class="el-license-container">
-<h4>Email Templates</h4>
-<button class="button" onclick="toggle('t1');">New Key</button>
-<div id="t1" style="display:none;">
-<hr />
-<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-<input type="hidden" name="action" id="action" value="save_email_template" />
-<input type="hidden" name="template" id="template" value="new_link" />
-        <?
-	$table = $wpdb->prefix."binance_auto_emails";
-
-$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");;
-$custom_editor_id = "e_template_newlink";
-$custom_editor_name = "e_template_newlink";
-$args = array(
-        'textarea_name' => $custom_editor_name,
-        'textarea_rows' => get_option('default_post_edit_rows', 5),
-    );
-wp_editor( $content, $custom_editor_id, $args );
-		?>
-                  
-                <?php wp_nonce_field( 'binance' ); ?>
-                <?php submit_button('Save'); ?>
-</form>
-        </div>
-     
-</div>
     <?php
 	// NEW ADMIN AREA
 //test mail
@@ -1843,6 +1870,92 @@ Auto Add Accounts
 </div>
 
 
+</div>
+<div class="el-license-container">
+<h4>Email Templates</h4>
+<button class="button" onclick="toggle_e('t1');">New Key</button>&nbsp;<button class="button" onclick="toggle_e('t2');">Key Expired</button>&nbsp;<button class="button" onclick="toggle_e('t3');">Confirm Trading</button>
+<div id="t3" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="trading_confirm" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'trading_confirm'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'trading_confirm'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_trading_confirm" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_trading_confirm";
+$custom_editor_name = "e_template_trading_confirm";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+<div id="t1" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="new_link" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_link'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'new_link'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_new_link" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_newlink";
+$custom_editor_name = "e_template_newlink";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+     
+<div id="t2" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="key_expired" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'key_expired'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'key_expired'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_key_expired" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_key_expired";
+$custom_editor_name = "e_template_key_expired";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
 </div>
             <div class="el-license-container">
 

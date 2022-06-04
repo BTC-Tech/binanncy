@@ -3,6 +3,13 @@ jQuery(document).ready(function($) {
 	$('#'+elem).slideToggle();
 });
 }
+function toggle_e(elem){
+jQuery(document).ready(function($) {
+	$("#t1").hide();
+	$("#t2").hide();
+	$('#'+elem).slideToggle();
+});
+}
 function cpyPaste(fld) {
   /* Get the text field */
   var copyText = document.getElementById(fld);
