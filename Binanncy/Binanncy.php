@@ -1193,7 +1193,7 @@ $body = $wpdb->get_var("SELECT e_message from $table where e_function = 'new_lin
 
 $body = str_replace('[member]', $current_user->display_name, $body);
 $body = str_replace('[api_key]', $api_key, $body);
-$body = str_replace('[expiry_date]', $temptime, $body)
+$body = str_replace('[expiry_date]', $temptime, $body);
 
 $to = $current_user->user_email;
 $msg = wp_mail( $to, $subject, $body, $headers );			
