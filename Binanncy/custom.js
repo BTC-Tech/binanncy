@@ -330,6 +330,22 @@ $('.ttip').tooltip();
 				});
 		
 		});
+		$("#cronalerts").click(function() {
+
+		var data = {
+			'action': 'toggle_setting',
+			'setting': 'b_cron_alert'
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					//notification...
+				$("#set_saved").show();
+				setTimeout(function(){
+				$("#set_saved").hide();
+				}, 5000);
+				});
+		
+		})
 		$("#autoexpire").click(function() {
 
 		var data = {

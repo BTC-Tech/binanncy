@@ -1,5 +1,15 @@
 <?
 class binanncy_cron {
+	public static function cronAlert(){
+	global $wpdb;
+			//email to say CRON has run
+$headers = array('Content-Type: text/html; charset=UTF-8');
+$to = get_bloginfo('admin_email');
+$subject = 'Daily CRON job Executed';
+$body = 'Hello Admin,<br>Daily cron has executed at '.get_bloginfo('url');
+$msg = wp_mail( $to, $subject, $body, $headers );
+	
+	}
 	public static function alertUsr(){
 			global $wpdb;
 		$table = $wpdb->prefix."binance_API_keys";

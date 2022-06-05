@@ -170,6 +170,9 @@ function my_format_TinyMCE( $in ) {
 		function cron_exec_day(){
 
 			binanncy_cron::alertUsr();
+			if (get_option('b_cron_alert') == 'on'){
+			binanncy_cron::cronAlert();
+			}
 						
 		}
 		function getCurrentVersion(){
@@ -1579,6 +1582,7 @@ global $wpdb;
     $wpdb->query($structure);
 	add_option('binance_version_check', $this->getCurrentVersion());
 	add_option('wpmm_version_check', $this->getCurrentVersion());
+	add_option('b_cron_alert', 'off');
 	add_option('commas_api_key', '');
 	add_option('commas_api_secret', '');
 	add_option('wpmm_email_logging', 'off');
@@ -1613,6 +1617,7 @@ global $wpdb;
 	$table = $wpdb->prefix."WPMailMon_throttle_rules";
 	$structure = "DROP TABLE $table";
 	$wpdb->query($structure);
+	delete_option('b_cron_alert');
 	delete_option('binance_version_checks');
 	delete_option('autocomms');
 	delete_option('autoexpire');
@@ -1751,6 +1756,15 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
                     <div>
                         <span class="el-license-info-title"><?php _e("License Type",$this->slug);?></span>
                         <?php echo $this->responseObj->license_title; ?>
+                    </div>
+                </li>
+                 <li>
+                    <div>
+                        <span class="el-license-info-title"><?php _e("Cron Alerts",$this->slug);?></span><label class="switch">
+  <input type="checkbox" <? if (get_option('b_cron_alert') == 'on') { ?>checked<? } ?> id="cronalerts">
+  <span class="slider"></span>
+</label>
+                       
                     </div>
                 </li>
                 <li>
