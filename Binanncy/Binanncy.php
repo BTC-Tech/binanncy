@@ -117,21 +117,42 @@ function my_format_TinyMCE( $in ) {
 		
 		
 		switch ($email_function){
-			
-			case "trading_confirm";
+		case "last_notice":
+		$email_template = $_REQUEST['e_template_last_notice'];
+		$subject = $_REQUEST['subject_last_notice'];
+		
+		break;
+		case "seven_notice":
+		$email_template = $_REQUEST['e_template_seven_notice'];
+		$subject = $_REQUEST['subject_seven_notice'];
+		
+		break;
+				
+		case "thirty_notice":
+		$email_template = $_REQUEST['e_template_thirty_notice'];
+		$subject = $_REQUEST['subject_thirty_notice'];
+		
+		break;			
+		
+		case "trading_confirm":
 		$email_template = $_REQUEST['e_template_trading_confirm'];
 		$subject = $_REQUEST['subject_trading_confirm'];
 		
 		break;
-			case "new_link";
+			case "new_link":
 		$email_template = $_REQUEST['e_template_newlink'];
 		$subject = $_REQUEST['subject_new_link'];
 		
 		break;
 			
-			case "key_expired";
+			case "key_expired":
 		$email_template = $_REQUEST['e_template_key_expired'];
 		$subject = $_REQUEST['subject_key_expired'];
+		break;
+		
+		case "key_removed":
+		$email_template = $_REQUEST['e_template_key_removed'];
+		$subject = $_REQUEST['subject_key_removed'];			
 		break;
 			
 		}
@@ -405,6 +426,22 @@ if( current_user_can('administrator')) {
 	$result = $comma->deleteAccount($comms_id);
 	
 		}
+	$table = $wpdb->prefix."binance_API_keys";
+	
+	$usr = get_userdata($wpdb->get_var("SELECT wpuid FROM $table where ID=".$apikey));
+	$api_key = $wpdb->get_var("SELECT API_KEY FROM $table where ID=".$apikey);
+
+$table = $wpdb->prefix."binance_auto_emails";
+$headers = array('Content-Type: text/html; charset=UTF-8');
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'key_removed'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'key_removed'");
+
+$body = str_replace('[member]', $usr->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+
+$to = $usr->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );
+	$table = $wpdb->prefix."binance_API_keys";
 		$wpdb->query("DELETE FROM $table where ID=".$apikey);
 } else {
 	echo "No Permission";
@@ -538,7 +575,9 @@ function wpmm_delete_api(){
 if ($current_user->ID>0){
 	
 	// get key info to delete
+	$keyid = $_REQUEST['apikey'];
 		$comms_id = $wpdb->get_var("select comms_id from $table where ID=".$_REQUEST['apikey']);
+		$api_key = $wpdb->get_var("select API_KEY from $table where ID=".$keyid);
 		
 		if ($comms_id <> '') {
 			
@@ -546,8 +585,23 @@ if ($current_user->ID>0){
 	$result = $comma->deleteAccount($comms_id);
 	
 		}
-			
-	$wpdb->query("DELETE FROM $table where ID=".$_REQUEST['apikey']." AND wpuid=".$current_user->ID);
+		
+$table = $wpdb->prefix."binance_auto_emails";
+$headers = array('Content-Type: text/html; charset=UTF-8');
+$body = $wpdb->get_var("SELECT e_message from $table where e_function = 'key_removed'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'key_removed'");
+
+$body = str_replace('[member]', $current_user->display_name, $body);
+$body = str_replace('[api_key]', $api_key, $body);
+
+$to = $current_user->user_email;
+$msg = wp_mail( $to, $subject, $body, $headers );	
+
+$table = $wpdb->prefix."binance_API_keys";	
+	$wpdb->query("DELETE FROM $table where ID=".$keyid." AND wpuid=".$current_user->ID);
+	
+	//send an email to warn them...
+	
 }
 
 wp_die();
@@ -1554,6 +1608,10 @@ global $wpdb;
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_day')");
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_day')");
 	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('trading_confirm')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('key_removed')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('thirty_notice')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('seven_notice')");
+	$wpdb->query("INSERT INTO $table (e_functiom) VALUES ('last_notice')");
 	
 	$table = $wpdb->prefix."binance_API_accounts";
     $structure = "CREATE TABLE $table (
@@ -1600,6 +1658,7 @@ global $wpdb;
 	$wpdb->query($structure);
 	delete_option('binance_version_checks');
 	delete_option('autocomms');
+	delete_option('autoexpire');
 	delete_option('commas_api_key');
 	delete_option('commas_api_secret');
  	delete_option("WPMailMon_lic_Key");
@@ -1743,6 +1802,13 @@ $adminSet = new wpmmAdminSet(empty($wpmm));
                         <?php echo get_option('binance_version_check'); ?>
                     </div>
                 </li>
+                <li>
+                    <div>
+                        <span class="el-license-info-title"><?php _e("Plugin Path",$this->slug);?></span>
+                        <?php echo plugin_dir_path( __DIR__ ); ?>
+                    </div>
+                </li>
+               
                <li>
                    <div>
                        <span class="el-license-info-title"><?php _e("License Expired on",$this->slug);?></span>
@@ -1836,18 +1902,26 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
     </div>
 
       <div class="row">
-            <div class="col-md-4" style="margin:auto;">
+            <div class="col-md-3" style="margin:auto;">
+<label class="switch">
+  <input type="checkbox" <? if (get_option('autoexpire') == 'on') { ?>checked<? } ?> id="autoexpire">
+  <span class="slider"></span>
+</label><br />
+Auto Delete Expired
+	
+			</div>
+            <div class="col-md-3" style="margin:auto;">
 <label class="switch">
   <input type="checkbox" <? if (get_option('autocomms') == 'on') { ?>checked<? } ?> id="autocomms">
   <span class="slider"></span>
 </label>
-Auto Add Accounts
+<br />Auto Add Accounts
 	
 			</div>
-            <div class="col-md-4" style="margin:auto;">
+            <div class="col-md-3" style="margin:auto;">
 <button class="button" onclick="syncCommas();">Sync With 3Commas</button>
 	`		</div>
-                <div class="col-md-4" style="margin:auto;">
+                <div class="col-md-3" style="margin:auto;">
 <button class="button" onclick="admExport();">Export Users</button>
 	`		</div>
             
@@ -1859,7 +1933,117 @@ Auto Add Accounts
 </div>
 <div class="el-license-container">
 <h4>Email Templates</h4>
-<button class="button" onclick="toggle_e('t1');">New Key</button>&nbsp;<button class="button" onclick="toggle_e('t2');">Key Expired</button>&nbsp;<button class="button" onclick="toggle_e('t3');">Confirm Trading</button>
+<div align="center">
+<button class="button" onclick="toggle_e('t1');">New Key</button>&nbsp;<button class="button" onclick="toggle_e('t2');">Key Expired</button>&nbsp;<button class="button" onclick="toggle_e('t3');">Confirm Trading</button>&nbsp;<button class="button" onclick="toggle_e('t4');">Key Removed</button>&nbsp;<button class="button" onclick="toggle_e('t5');">30 Day Notice</button>&nbsp;<button class="button" onclick="toggle_e('t6');">7 Day Notice</button>&nbsp;<button class="button" onclick="toggle_e('t7');">Last Reminder</button>
+</div>
+<div id="t7" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="last_notice" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'last_notice'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'last_notice'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_last_notice" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_last_notice";
+$custom_editor_name = "e_template_last_notice";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+<div id="t6" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="seven_notice" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'seven_notice'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'seven_notice'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_seven_notice" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_seven_notice";
+$custom_editor_name = "e_template_seven_notice";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+<div id="t5" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="thirty_notice" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'thirty_notice'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'thirty_notice'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_thirty_notice" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_thirty_notice";
+$custom_editor_name = "e_template_thirty_notice";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
+<div id="t4" style="display:none;">
+<hr />
+<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<input type="hidden" name="action" id="action" value="save_email_template" />
+<input type="hidden" name="template" id="template" value="key_removed" />
+<?
+	$table = $wpdb->prefix."binance_auto_emails";
+
+$content = $wpdb->get_var("SELECT e_message from $table where e_function = 'key_removed'");
+$subject = $wpdb->get_var("SELECT e_subject from $table where e_function = 'key_removed'");
+?>
+Email Subject:
+<input type="text" style="width:100%" name="subject_key_removed" placeholder="Email Subject" value="<? echo $subject; ?>" />
+        <?
+$custom_editor_id = "e_template_key_removed";
+$custom_editor_name = "e_template_key_removed";
+$args = array(
+        'textarea_name' => $custom_editor_name,
+        'textarea_rows' => get_option('default_post_edit_rows', 5),
+    );
+wp_editor( $content, $custom_editor_id, $args );
+		?>
+                  
+                <?php wp_nonce_field( 'binance' ); ?>
+                <?php submit_button('Save'); ?>
+</form>
+        </div>
 <div id="t3" style="display:none;">
 <hr />
 <style>

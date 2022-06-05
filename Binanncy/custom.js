@@ -8,6 +8,10 @@ jQuery(document).ready(function($) {
 	$("#t1").hide();
 	$("#t2").hide();
 	$("#t3").hide();
+	$("#t4").hide();
+	$("#t5").hide();
+	$("#t6").hide();
+	$("#t7").hide();
 	$('#'+elem).slideToggle();
 });
 }
@@ -326,6 +330,22 @@ $('.ttip').tooltip();
 				});
 		
 		});
+		$("#autoexpire").click(function() {
+
+		var data = {
+			'action': 'toggle_setting',
+			'setting': 'autoexpire'
+		};
+
+				jQuery.post(ajaxurl, data, function(response) {
+					//notification...
+				$("#set_saved").show();
+				setTimeout(function(){
+				$("#set_saved").hide();
+				}, 5000);
+				});
+		
+		})
 		$("#autocomms").click(function() {
 
 		var data = {
