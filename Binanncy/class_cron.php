@@ -1,5 +1,28 @@
 <?
 class binanncy_cron {
+	public static function syncStats(){
+		global $wpdb;
+	
+		$table = $wpdb->prefix."binance_API_keys";
+		
+		$db = $wpdb->get_results("SELECT * FROM $table where comms_id <>''");
+		$table = $wpdb->prefix."binance_API_stats";
+		foreach($db as $rec){
+	//loop each API  key
+		$cID = $rec->comms_id;
+	//records stats
+	
+		$summary = commas::getStats($cID);
+		$summary = json_decode($summary);
+			//echo ":::::".$summary->name;
+			
+			$sql = "INSERT INTO $table (btc_amount, usd_amount, day_profit_btc, day_profit_usd, day_profit_btc_percentage, day_profit_usd_percentage, btc_profit, usd_profit, usd_profit_percentage, btc_profit_percentage, total_btc_profit, total_usd_profit, e_time, account_name) VALUES ('".$summary->btc_amount."', '".$summary->usd_amount."', '".$summary->day_profit_btc."', '".$summary->day_profit_usd."', '".$summary->day_profit_btc_percentage."', '".$summary->day_profit_usd_percentage."', '".$summary->btc_profit."', '".$summary->usd_profit."', '".$summary->usd_profit_percentage."', '".$summary->btc_profit_percentage."', '".$summary->total_btc_profit."', '".$summary->total_usd_profit."', '".strtotime("now")."', '".$summary->name."')";
+			$wpdb->query($sql);
+		
+		}
+
+	
+	}
 	public static function cronAlert(){
 	global $wpdb;
 			//email to say CRON has run

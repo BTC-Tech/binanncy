@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.0.3
+Version: 2.1.1
 */
 require_once "class_commas.php";
 require_once "class_cron.php";
@@ -169,10 +169,18 @@ function my_format_TinyMCE( $in ) {
 		
 		function cron_exec_day(){
 
-			binanncy_cron::alertUsr();
+			//binanncy_cron::alertUsr();
+			binanncy_cron::syncStats();
+			
 			if (get_option('b_cron_alert') == 'on'){
 			binanncy_cron::cronAlert();
 			}
+			
+			if (get_option('autoexpire') == 'on') {
+			//remove expired keys...
+				
+			}
+		
 						
 		}
 		function getCurrentVersion(){
@@ -191,6 +199,13 @@ function update_db_check() {
 	$new = $this->getCurrentVersion();
     if ($current != $new) {
 		//changes for new version.....
+	$table = $wpdb->prefix."binance_API_stats";
+    $structure = "CREATE TABLE $table (
+        ID INT(9) NOT NULL AUTO_INCREMENT,
+        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(50)
+    );";
+
+    $wpdb->query($structure);
 	
 		update_option('binance_version_check', $new);
     }
@@ -907,6 +922,26 @@ if (!$_REQUEST['overide']) {
 	width: 80%;
 	
 }
+.transaction {
+	border-left: 2px solid #666;
+	background-color:#D8D8D8;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 5px;
+	padding-right: 5px;
+	margin-bottom: 4px;
+	
+}
+.transaction2 {
+	border-left: 2px solid #999;
+	background-color:#FAFAFA;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 5px;
+	padding-right: 5px;
+	margin-bottom: 4px;
+	
+}
 </style>
 <? if ($_REQUEST['mode'] == 'stats') { ?>
 <fieldset><legend>Statistics</legend>
@@ -943,6 +978,7 @@ $table = $wpdb->prefix."binance_API_keys";
 		$intAPIKey = $rec->API_KEY;
 		$intTime = $rec->time_added;
 		$keyID = $rec->ID;
+		$cID = $rec->comms_id;
 		}
 
 	
@@ -990,7 +1026,6 @@ $spotshot = binance::call('/sapi/v1/accountSnapshot', [
 
 ///api/v3/openOrders
 $openorders = binance::call('/api/v3/openOrders');
-
 
 if ($enableWithdrawals<1){
 	$enableWithdrawals = "NO";
@@ -1041,11 +1076,12 @@ echo $dt->format('Y-m-d H:i:s'); // output = 2012-08-15 00:00:00
  $dt = new DateTime("@$epoch");
  $etime = $dt->format('Y-m-d H:i A');
  $etime = date("Y-m-d H:i A", substr($iTime, 0, 10));
- 
+
 ?>
 <div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="stat_apikey_<? echo $rec->ID; ?>">
 <img src="<?php echo esc_url(plugins_url('/images/api.png', __FILE__)); ?>" width="24px" /> [<? echo date('d/m/y', $intTime); ?>] <? echo $intAPIKey; ?><hr />
 <h4>Statistics</h4>
+
 Last 7 Days SPOT snapshots :
 <div id="dialog" title="SPOT Snapshot">
   <p><div id="diag_stat_ajax">Loading.....</div></p>
@@ -1068,7 +1104,42 @@ Last 7 Days SPOT snapshots :
 <div id="stats_deposits" style="display:none">
 <fieldset><legend>Deposit History</legend>
 <?
-if ($deposits['total']<1){ echo "No deposits to display."; }
+
+if ($deposits['total']<1){ 
+echo "No deposits to display."; 
+} else {
+	$tmp = $deposits['data'];
+	$class = "transaction2";
+	foreach($tmp as $i){
+		$method = $i['method'];
+		
+		$ttime = substr($i['createTime'], 0, 10);
+		
+		switch ($i['status']){
+			
+			case 'Successful':
+			$tx_state = '<font color="#009900"><b>Credit</b></font>';
+			break;
+			case 'Failed':
+			$tx_state = '<font color="#FF3300"><b>Failed</b></font>';			
+			break;
+			
+		}
+		
+		if ($class == 'transaction2'){
+			$class = 'transaction';
+		} else {
+			$class = 'transaction2';
+		}
+		?>
+ <div class="<? echo $class; ?>">
+ <? if ($method == 'Card') { ?><i class="fa-solid fa-credit-card"></i> &nbsp;<? } echo '['.date('Y-m-d H:i', $ttime).'] '.$i['orderNo'].' ['.$tx_state.'] <b>'.$i['fiatCurrency'].'</b><hr>Amount: x.xx | Fee: x.xx | Total: x.xx'; ?>
+ </div>
+        <?
+	//echo "<li>Order: ".$i['orderNo']."</li>";	
+	}
+}
+
  ?>
 </fieldset>
 <br />
@@ -1545,6 +1616,15 @@ function screen_option_throttle() {
 }
 function wpmmInstall(){
 global $wpdb;
+
+	$table = $wpdb->prefix."binance_API_stats";
+    $structure = "CREATE TABLE $table (
+        ID INT(9) NOT NULL AUTO_INCREMENT,
+        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(5)
+    );";
+
+    $wpdb->query($structure);
+	
 	$table = $wpdb->prefix."binance_API_keys";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
@@ -1599,6 +1679,10 @@ global $wpdb;
 function wpmmUninstall(){
 global $wpdb;
 	$table = $wpdb->prefix."binance_API_accounts";
+	$structure = "DROP TABLE $table";
+	$wpdb->query($structure);
+	
+	$table = $wpdb->prefix."binance_API_stats";
 	$structure = "DROP TABLE $table";
 	$wpdb->query($structure);
 		
@@ -1860,7 +1944,7 @@ if(!empty(sanitize_text_field($_REQUEST['msg']))):
   </tr>
     <tr>
     <td><div align="right">Account Prefix :&nbsp;</div></td>
-    <td><input type="text" name="comms_prefix" id="comms_prefix" size="20" value="<? echo get_option('commas_prefix'); ?>" placeholder="e.g wp_ or binance_" /></td>
+    <td><input type="text" name="comms_prefix" id="comms_prefix" size="20" value="<? echo get_option('commas_prefix'); ?>" placeholder="e.g wp_ or binance_" <? if (get_option('commas_prefix') <> '') { ?>readonly="readonly"<? } ?> /></td>
   </tr>
     <tr>
     <td colspan="2" align="right">

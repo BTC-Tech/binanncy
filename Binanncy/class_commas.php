@@ -71,6 +71,76 @@ $msg = wp_mail( $to, $subject, $body, $headers );
 		}
 		
 	}
+		public static function getTableStats($account){
+	global $wpdb;
+	
+$ch = curl_init();
+$timestamp = round(microtime(true) * 1000);
+$secret = get_option('commas_api_secret');
+$key = get_option('commas_api_key');
+
+	
+$data = "account_id=".$account;
+$querystring = '/public/api/ver1/accounts/'.$account.'/account_table_data?'.$data;
+$signature = hash_hmac('SHA256',$querystring ,$secret);
+
+curl_setopt($ch, CURLOPT_URL, "https://api.3commas.io/public/api/ver1/accounts/".$account.'/account_table_data');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'APIKEY: '.$key,
+    'Signature: '.$signature,
+	'Content-Type: application/x-www-form-urlencoded'
+));
+
+$result = curl_exec($ch);
+
+if (curl_errno($ch)) {
+    echo 'Error:' . curl_error($ch);
+} else {
+	return $result;
+	//return $querystring;
+}
+curl_close ($ch);
+		
+	}
+	public static function getStats($account){
+	global $wpdb;
+	
+$ch = curl_init();
+$timestamp = round(microtime(true) * 1000);
+$secret = get_option('commas_api_secret');
+$key = get_option('commas_api_key');
+
+	
+$data = "account_id=".$account;
+$querystring = '/public/api/ver1/accounts/'.$account;
+$signature = hash_hmac('SHA256',$querystring ,$secret);
+
+curl_setopt($ch, CURLOPT_URL, "https://api.3commas.io/public/api/ver1/accounts/".$account);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+//curl_setopt($ch, CURLOPT_POST, 1);
+//curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'APIKEY: '.$key,
+    'Signature: '.$signature,
+	'Content-Type: application/x-www-form-urlencoded'
+));
+
+$result = curl_exec($ch);
+
+if (curl_errno($ch)) {
+    echo 'Error:' . curl_error($ch);
+} else {
+	return $result;
+	//return $querystring;
+}
+curl_close ($ch);
+		
+	}
 	function createAccount($account, $api_key, $api_secret) {
 		global $wpdb;
 		

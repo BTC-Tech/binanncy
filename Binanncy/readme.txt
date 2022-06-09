@@ -48,3 +48,5 @@ New dynamic email templates.
 = 2.0.3 =
 New email template for user confirmatiion on going live with API
 New function to follow.
+= 2.1.0 =
+New database for daily statistics cron.
