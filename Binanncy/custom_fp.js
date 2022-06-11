@@ -17,6 +17,21 @@ function cpyPaste(fld) {
   /* Alert the copied text */
   alert("Copied the text: " + copyText.value);
 } 
+function jsGetCoin(coin, acc){
+jQuery(document).ready(function($) {
+	$("#coin_diag_stat_ajax").html('Loading....');
+    $("#coin_dialog").dialog("open");
+		var data = {
+			'action': 'wpb_getcoinstat',
+			'coin': coin,
+			'account' : acc
+		};
+
+				jQuery.post(wpmm.ajaxurl, data, function(response) {
+					$("#coin_diag_stat_ajax").html(response);
+				});	
+});
+}
 function jsStatDialog(did, aid){
 jQuery(document).ready(function($) {
 	$("#diag_stat_ajax").html('Loading....');
@@ -218,6 +233,11 @@ jQuery(document).ready(function($) {
 jQuery(document).ready(function($) {
 	
 	//dialogs
+  $("#coin_dialog").dialog({
+   autoOpen: false,
+   modal: true,
+   width: "70%"
+});
   $("#dialog").dialog({
    autoOpen: false,
    modal: true,

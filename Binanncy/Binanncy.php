@@ -46,6 +46,7 @@ class Binanncy {
     wp_schedule_event( time(), 'daily', 'wpmm_cron_hook_day' );
 }
 		add_action('wp_ajax_wpb_delete_file', [$this, 'wpb_delete_file']);
+		add_action('wp_ajax_wpb_getcoinstat', [$this, 'wpb_getcoinstat']);
 		add_action('wp_ajax_wpb_export', [$this, 'wpb_export']);
 		add_action('wp_ajax_wpb_sync_commas', [$this, 'wpb_sync_commas']);
 		add_action('wp_ajax_toggle_setting', [$this,'toggle_Setting']);
@@ -84,6 +85,45 @@ add_action('wp_ajax_wpmm_update_videostage', [$this, 'wpmm_update_videostage']);
         }
     }
 // ### CUSTOM FUNCTIONS
+function wpb_getcoinstat(){
+	
+	$coin = $_REQUEST['coin'];
+	$account = $_REQUEST['account'];
+	
+		if( current_user_can('administrator')) {
+	
+	$table_stats = json_decode(commas::getTableStats($account));
+//print_r($table_stats);
+
+foreach($table_stats as $i){
+	
+	if ($i->currency_code == $coin){
+		
+		//print_r($i);
+		
+		$c_change = bcadd($i->day_change_percent, 0, 2);
+		if (bccomp($c_change, 0, 2) > 0){
+		//its green	
+		$ticon = "fa-solid fa-arrow-up";
+		$fcol = "green";
+		}
+		if (bccomp($c_change, 0, 2) < 0){
+		//its red
+		$ticon = "fa-solid fa-arrow-down";
+		$fcol = "red";
+		}
+		
+		?>
+        <div align="left" style="width: 50%; float:left"><img src="<? echo $i->currency_icon; ?>" title="<? echo $i->currency_name; ?>" width="24px" /> <b><? echo $i->currency_name; ?></b> [<? echo $i->currency_code; ?>]</div><div align="right" style="margin-left: 50%"><font size="2">Current Price: $<? echo bcadd($i->current_price_usd, 0, 8); ?></font> <font size="1" color="<? echo $fcol; ?>">(<i class="<? echo $ticon; ?>"></i>&nbsp;<? echo bcadd($i->day_change_percent, 0, 2); ?>%)</font></div><hr />
+        <div align="left" style="width: 50%; float:left"><font size="2">BTC Value: <b><? echo bcadd($i->btc_value, 0, 8); ?></b> | USD Value: <b><? echo bcadd($i->usd_value, 0, 2); ?></b></font></div>
+        <div align="right" style="margin-left: 50%"><font size="2">Position: <b><? echo bcadd($i->position, 0, 2); ?></b> | Equity: <b><? echo bcadd($i->equity, 0, 8); ?></b></font></div>
+   <?
+	}
+	
+}
+		}
+wp_die();	
+}
 function my_format_TinyMCE( $in ) {
 	$in['remove_linebreaks'] = false;
 	$in['gecko_spellcheck'] = false;
@@ -202,7 +242,7 @@ function update_db_check() {
 	$table = $wpdb->prefix."binance_API_stats";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(50)
+        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(50), wpuid INT(9) DEFAULT 0
     );";
 
     $wpdb->query($structure);
@@ -904,6 +944,7 @@ if (!$_REQUEST['overide']) {
 }
 .optbutton {
 	padding: 2px 2px 2px 5px;
+	margin-bottom: 5px;
 	
 }
 .statbutton {
@@ -1076,6 +1117,8 @@ echo $dt->format('Y-m-d H:i:s'); // output = 2012-08-15 00:00:00
  $dt = new DateTime("@$epoch");
  $etime = $dt->format('Y-m-d H:i A');
  $etime = date("Y-m-d H:i A", substr($iTime, 0, 10));
+ 
+ //binanncy_cron::syncStats();
 
 ?>
 <div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="stat_apikey_<? echo $rec->ID; ?>">
@@ -1101,6 +1144,7 @@ Last 7 Days SPOT snapshots :
 <button class="optbutton" onclick="toggle('stats_deposits');"><i class="fa-solid fa-vault"></i> Deposit History</button>&nbsp;<button class="optbutton" onclick="toggle('stats_withdrawals');"><i class="fa-solid fa-money-bill-transfer"></i> Withdrawal History</button>&nbsp;<button class="optbutton" onclick="toggle('stats_openorders');"><i class="fa-solid fa-hand-holding-hand"></i> Open Orders</button>
 </div>
 <br />
+<hr />
 <div id="stats_deposits" style="display:none">
 <fieldset><legend>Deposit History</legend>
 <?
@@ -1133,7 +1177,7 @@ echo "No deposits to display.";
 		}
 		?>
  <div class="<? echo $class; ?>">
- <? if ($method == 'Card') { ?><i class="fa-solid fa-credit-card"></i> &nbsp;<? } echo '['.date('Y-m-d H:i', $ttime).'] '.$i['orderNo'].' ['.$tx_state.'] <b>'.$i['fiatCurrency'].'</b><hr>Amount: x.xx | Fee: x.xx | Total: x.xx'; ?>
+ <? if ($method == 'Card') { ?><i class="fa-solid fa-credit-card"></i> &nbsp;<? } echo '['.date('Y-m-d H:i', $ttime).'] '.$i['orderNo'].' ['.$tx_state.'] <b>'.$i['fiatCurrency'].'</b><hr>Amount: <b>'.$i['indicatedAmount'].'</b> | Fee: <b>'.$i['totalFee'].'</b> | Total: <b>'.$i['amount'].'</b>'; ?>
  </div>
         <?
 	//echo "<li>Order: ".$i['orderNo']."</li>";	
@@ -1147,7 +1191,9 @@ echo "No deposits to display.";
 <div id="stats_withdrawals" style="display:none">
 <fieldset><legend>Withdrawal History</legend>
 <?
-if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
+if ($withdrawals['total']<1){ echo "No withdrawals to display."; } else {
+	print_r($withdrawals);	
+}
  ?>
 </fieldset>
 <br />
@@ -1158,6 +1204,25 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
 </fieldset>
 <br />
 </div>
+<div id="coin_dialog" title="Information">
+  <p><div id="coin_diag_stat_ajax">Loading.....</div></p>
+</div>
+<h4>3Commas Coin Data</h4>
+<div align="center">
+<?
+$table_stats = json_decode(commas::getTableStats($cID));
+//print_r($table_stats);
+
+foreach($table_stats as $i){
+
+		?>
+ <button class="optbutton" onclick="jsGetCoin('<? echo $i->currency_code; ?>', <? echo $cID; ?>);"> <img src="<? echo $i->currency_icon; ?>" width="24px" title="<? echo $i->currency_name; ?>" /> <? echo $i->currency_code; ?></button>
+
+<?	
+}
+?>
+</div>
+<hr /><br />
 </div>
 
 </div>
@@ -1194,7 +1259,14 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
   font-size: 12px;
   border-left: 5px solid #03C;
 }
-
+.notice {
+  padding: 5px;
+  background-color: #FF6013;
+  color: white;
+  margin-top:5px;
+  font-size: 12px;
+  border-left: 5px solid #DB6D00;
+}
 .closebtn {
   margin-left: 15px;
   color: white;
@@ -1209,12 +1281,103 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; }
 .closebtn:hover {
   color: black;
 }
+.stat_board{
+  border: 2px solid;
+  padding: 5px;
+  box-shadow: 5px 10px #DFDFDF;
+  width: 125px;
+  height: 75px;
+  margin-bottom: 15px;
+  margin-right: 5px;
+  border-radius: 5px;
+}
+.stat_board_good{
+  border: 2px solid #393;
+  padding: 5px;
+  box-shadow: 5px 10px #DFE;
+  width: 125px;
+  height: 75px;
+  margin-bottom: 15px;
+   margin-right: 5px;
+  border-radius: 5px;
+}
+.stat_board_bad{
+  border: 2px solid #D90000;
+  padding: 5px;
+  box-shadow: 5px 10px #FDD2DC;
+  width: 125px;
+  height: 75px;
+  margin-bottom: 15px;
+  margin-right: 5px;
+  border-radius: 5px;
+}
+.stat_title {
+	font-size:12px;
+	font-weight:600;
+	
+}
 </style>
+<?
+$is = 1;
+$table = $wpdb->prefix."binance_API_stats";
+$db = $wpdb->get_results("SELECT * FROM $table where wpuid=".$current_user->ID." ORDER BY e_time DESC LIMIT 1");
+
+$recs = 0;
+foreach($db as $rec){
+	$recs++;
+	$day_profit_btc_percentage = $rec->day_profit_btc_percentage; 
+	$day_profit_btc = bcadd($rec->day_profit_btc, 0, 8);	
+	$day_profit_usd_percentage = $rec->day_profit_usd_percentage;
+	$day_profit_usd = $rec->day_profit_usd;
+}
+	$btc_profit_percentage = $rec->btc_profit_percentage;
+		$usd_profit_percentage = $rec->usd_profit_percentage;
+	$total_btc_profit = $rec->total_btc_profit;
+	$total_usd_profit = $rec->total_usd_profit;
+?>
 <div class="alert">
   <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
   <strong>Notice: </strong> This application is still currently under contstruction, please report any issues to site administrators.
 </div>
-<fieldset><legend>Dashboard</legend>
+<fieldset><legend>Dashboard</legend><div align="center">
+<? if ($recs>0) { ?>
+
+<div class="stat_board<? if (bccomp($day_profit_btc_percentage, 0, 2)>=0) { ?>_good<? } ?>" align="center" style="display:inline-table;"><span class="stat_title">Today's BTC Profit</span>
+  <hr /><? echo $day_profit_btc_percentage; ?>%<br /><font size="2"><? echo $day_profit_btc; ?> BTC</font></div>
+<div class="stat_board<? if (bccomp($day_profit_usd_percentage, 0, 2)>=0) { ?>_good<? } ?>" align="center" style="display:inline-table;"><span class="stat_title">Today's USD Profit</span>
+  <hr /><? echo $day_profit_usd_percentage; ?>%<br /><font size="2"><? echo bcadd($day_profit_usd, 0, 2); ?> USD</font></div>
+  <div class="stat_board<? if (bccomp($btc_profit_percentage, 0, 2)<1) { ?>_bad<? } ?>" align="center" style="display:inline-table;"><span class="stat_title">Total BTC Profit</span>
+    <hr /><? echo $btc_profit_percentage; ?>%<br />
+    <font size="2"><? echo bcadd($total_btc_profit, 0, 8); ?> BTC</font></div>
+  <div class="stat_board<? if (bccomp($usd_profit_percentage, 0, 2)<1) { ?>_bad<? } ?>" align="center" style="display:inline-table;"><span class="stat_title">Total USD Profit</span>
+    <hr /><? echo $usd_profit_percentage; ?>%<br /><font size="2"><? echo bcadd($total_usd_profit, 0, 2); ?> USD</font></div>
+    <? } else { ?>
+    No statistics available yet, please check back in 24 hours.
+    <? } ?>
+    </div>
+ <?
+ //Expiring API key notifications
+ $table = $wpdb->prefix."binance_API_keys";
+ $exp = strtotime("+30 day");
+ $sql = "SELECT ID from $table where trading_expires < ".$exp." AND wpuid=".$current_user->ID;
+ $db = $wpdb->get_results($sql);
+ 
+ $keyexpiry = 0;
+ 
+ foreach($db as $rec){
+	$keyexpiry++; 
+ }
+ 
+ 
+ if ($keyexpiry>0) {
+ ?>
+ <div class="notice">
+  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+  <strong>Notice: </strong> You have <a href="javascript:;" onclick="jsGoto('<? echo home_url($wp->request); ?>/?mode=api_keys');">API keys</a> due to expire within 30 days.
+</div>
+ <?
+ }
+ ?>
 </fieldset><br />
 <? } ?>
 <div align="left">
@@ -1620,7 +1783,7 @@ global $wpdb;
 	$table = $wpdb->prefix."binance_API_stats";
     $structure = "CREATE TABLE $table (
         ID INT(9) NOT NULL AUTO_INCREMENT,
-        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(5)
+        UNIQUE KEY ID (id), btc_amount VARCHAR(50), usd_amount VARCHAR(50), day_profit_btc VARCHAR(50), day_profit_usd VARCHAR(50), day_profit_btc_percentage VARCHAR(50), day_profit_usd_percentage VARCHAR(50), btc_profit VARCHAR(50), usd_profit VARCHAR(50), usd_profit_percentage VARCHAR(50), btc_profit_percentage VARCHAR(50), total_btc_profit VARCHAR(50), total_usd_profit VARCHAR(50), e_time VARCHAR(50) DEFAULT NULL, account_name VARCHAR(5), wpuid INT(9) DEFAULT 0
     );";
 
     $wpdb->query($structure);

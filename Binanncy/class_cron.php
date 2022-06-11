@@ -10,14 +10,17 @@ class binanncy_cron {
 		foreach($db as $rec){
 	//loop each API  key
 		$cID = $rec->comms_id;
+		$wpuid = $rec->wpuid;
 	//records stats
 	
 		$summary = commas::getStats($cID);
 		$summary = json_decode($summary);
 			//echo ":::::".$summary->name;
+			//print_r($summary);
 			
-			$sql = "INSERT INTO $table (btc_amount, usd_amount, day_profit_btc, day_profit_usd, day_profit_btc_percentage, day_profit_usd_percentage, btc_profit, usd_profit, usd_profit_percentage, btc_profit_percentage, total_btc_profit, total_usd_profit, e_time, account_name) VALUES ('".$summary->btc_amount."', '".$summary->usd_amount."', '".$summary->day_profit_btc."', '".$summary->day_profit_usd."', '".$summary->day_profit_btc_percentage."', '".$summary->day_profit_usd_percentage."', '".$summary->btc_profit."', '".$summary->usd_profit."', '".$summary->usd_profit_percentage."', '".$summary->btc_profit_percentage."', '".$summary->total_btc_profit."', '".$summary->total_usd_profit."', '".strtotime("now")."', '".$summary->name."')";
+			$sql = "INSERT INTO $table (btc_amount, usd_amount, day_profit_btc, day_profit_usd, day_profit_btc_percentage, day_profit_usd_percentage, btc_profit, usd_profit, usd_profit_percentage, btc_profit_percentage, total_btc_profit, total_usd_profit, e_time, account_name, wpuid) VALUES ('".$summary->btc_amount."', '".$summary->usd_amount."', '".$summary->day_profit_btc."', '".$summary->day_profit_usd."', '".$summary->day_profit_btc_percentage."', '".$summary->day_profit_usd_percentage."', '".$summary->btc_profit."', '".$summary->usd_profit."', '".$summary->usd_profit_percentage."', '".$summary->btc_profit_percentage."', '".$summary->total_btc_profit."', '".$summary->total_usd_profit."', '".strtotime("now")."', '".$summary->name."', ".$wpuid.")";
 			$wpdb->query($sql);
+
 		
 		}
 
