@@ -3,10 +3,11 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.1.1
+Version: 2.1.2
 */
 require_once "class_commas.php";
 require_once "class_cron.php";
+//require_once "safeCrypto.php";
 
 require_once "BinanncyBase.php";
 require_once 'binance.php';
@@ -702,7 +703,8 @@ if ($current_user->ID>0){
 		 wp_enqueue_style( 'fawsome' ); 
         wp_enqueue_style( 'jquery-style' );
 
-		
+wp_register_script( 'cansjs', plugins_url('/jquery.canvasjs.min.js', __FILE__)  , '', '', true );
+wp_enqueue_script( 'cansjs' );
 wp_enqueue_script( 'wpmm-js', plugins_url('/custom_fp.js', __FILE__ ), array(), '', true );
 wp_enqueue_script( 'block-ui', plugins_url('/blockUI.js', __FILE__ ), array(), '', true ); 
 wp_localize_script( 'wpmm-js', 'wpmm', array(
@@ -1020,6 +1022,7 @@ $table = $wpdb->prefix."binance_API_keys";
 		$intTime = $rec->time_added;
 		$keyID = $rec->ID;
 		$cID = $rec->comms_id;
+		$acc = $rec->localID;
 		}
 
 	
@@ -1054,6 +1057,7 @@ $withdrawals = binance::call('/sapi/v1/fiat/orders', [
 $spotshot = binance::call('/sapi/v1/accountSnapshot', [
   'type' => 'SPOT'
 ]);
+if ($perms['msg'] <> 'Invalid Api-Key ID.'){
 
 		foreach($spotshot['snapshotVos'] as $item => $values) {
 	$ttime = date("Y-m-d H:i A", substr($values['updateTime'], 0, 10));
@@ -1119,11 +1123,128 @@ echo $dt->format('Y-m-d H:i:s'); // output = 2012-08-15 00:00:00
  $etime = date("Y-m-d H:i A", substr($iTime, 0, 10));
  
  //binanncy_cron::syncStats();
+ 
+ //print_r(commas::helpChris($cID));
 
 ?>
-<div class="apidiv <? if ($rec->status<1) { ?>disableddiv<? } ?>" id="stat_apikey_<? echo $rec->ID; ?>">
+<?php
+ 
+$dataPoints = array(
+	array("label"=> 1997, "y"=> 254722.1),
+	array("label"=> 1998, "y"=> 292175.1),
+	array("label"=> 1999, "y"=> 369565),
+	array("label"=> 2000, "y"=> 284918.9),
+	array("label"=> 2001, "y"=> 325574.7),
+	array("label"=> 2002, "y"=> 254689.8),
+	array("label"=> 2003, "y"=> 303909),
+	array("label"=> 2004, "y"=> 335092.9),
+	array("label"=> 2005, "y"=> 408128),
+	array("label"=> 2006, "y"=> 300992.2),
+	array("label"=> 2007, "y"=> 401911.5),
+	array("label"=> 2008, "y"=> 299009.2),
+	array("label"=> 2009, "y"=> 319814.4),
+	array("label"=> 2010, "y"=> 357303.9),
+	array("label"=> 2011, "y"=> 353838.9),
+	array("label"=> 2012, "y"=> 288386.5),
+	array("label"=> 2013, "y"=> 485058.4),
+	array("label"=> 2014, "y"=> 326794.4),
+	array("label"=> 2015, "y"=> 483812.3),
+	array("label"=> 2016, "y"=> 254484)
+);
+
+		$table = $wpdb->prefix."binance_API_stats";
+		$sql = "SELECT * FROM $table where wpuid=".$current_user->ID." AND account_name = '".$acc."'";
+		$db = $wpdb->get_results($sql);
+
+$dataPoints = array();
+$dataPoints_usd = array();
+
+foreach ($db as $rec){
+	
+	$ttime = date('d/m', $rec->e_time);
+	$perc = bcadd($rec->usd_amount, 0, 2);
+	
+	$tmp = array("label"=>$ttime, "y"=>$perc);
+	array_push($dataPoints, $tmp);
+
+	$ttime = date('d/m', $rec->e_time);
+	$perc = bcadd($rec->day_profit_usd, 0, 2);
+	
+	$tmp = array("label"=>$ttime, "y"=>$perc);
+	array_push($dataPoints_usd, $tmp);	
+}
+
+
+//print_r(commas::helpChris($cID));
+	
+?>
+<script>
+jQuery(document).ready(function($) {
+	var chart = new CanvasJS.Chart("chartContainer", {
+	animationEnabled: true,
+	//theme: "light2",
+	title:{
+		text: "Daily USD Amount"
+	},
+	axisX:{
+		crosshair: {
+			enabled: true,
+			snapToDataPoint: true
+		}
+	},
+	axisY:{
+		title: "USD $",
+		includeZero: true,
+		crosshair: {
+			enabled: true,
+			snapToDataPoint: true
+		}
+	},
+	toolTip:{
+		enabled: false
+	},
+	data: [{
+		type: "area",
+		dataPoints: <?php echo json_encode($dataPoints, JSON_NUMERIC_CHECK); ?>
+	}]
+});
+chart.render();
+
+	var chartusd = new CanvasJS.Chart("chartContainer_usd", {
+	animationEnabled: true,
+	//theme: "light2",
+	title:{
+		text: "Daily USD Profit"
+	},
+	axisX:{
+		crosshair: {
+			enabled: true,
+			snapToDataPoint: true
+		}
+	},
+	axisY:{
+		title: "USD $",
+		includeZero: true,
+		crosshair: {
+			enabled: true,
+			snapToDataPoint: true
+		}
+	},
+	toolTip:{
+		enabled: false
+	},
+	data: [{
+		type: "area",
+		dataPoints: <?php echo json_encode($dataPoints_usd, JSON_NUMERIC_CHECK); ?>
+	}]
+});
+chartusd.render();
+});
+</script>
+<div class="apidiv" id="stat_apikey_<? echo $rec->ID; ?>">
 <img src="<?php echo esc_url(plugins_url('/images/api.png', __FILE__)); ?>" width="24px" /> [<? echo date('d/m/y', $intTime); ?>] <? echo $intAPIKey; ?><hr />
 <h4>Statistics</h4>
+
 
 Last 7 Days SPOT snapshots :
 <div id="dialog" title="SPOT Snapshot">
@@ -1223,10 +1344,35 @@ foreach($table_stats as $i){
 ?>
 </div>
 <hr /><br />
+<table width="100%" border="0">
+  <tr>
+    <td><div id="chartContainer" style="height: 150px; width: 100%;"></div></td>
+    <td><div id="chartContainer_usd" style="height: 150px; width: 100%;"></div></td>
+  </tr>
+</table>
+
+
+
 </div>
 
 </div>
 <br />
+<? } else { ?>
+<style>
+.alert {
+  padding: 5px;
+  background-color: #F90;
+  color: white;
+  margin-top:10px;
+  font-size: 12px;
+  border-left: 5px solid #F30;
+}
+</style>
+<div class="alert">
+  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+  <strong>Notice: </strong> This API key is no longer valid or has expired. Please remove it.
+</div>
+<? } ?>
 <? } ?>
 <? } ?>
 <? if ($_REQUEST['mode'] == '') { ?>
@@ -1339,6 +1485,34 @@ foreach($db as $rec){
   <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
   <strong>Notice: </strong> This application is still currently under contstruction, please report any issues to site administrators.
 </div>
+<?
+/*
+$db = $wpdb->get_results("SELECT * FROM api_keys LIMIT 1");
+
+foreach ($db as $key){
+
+$a = $key->API_KEY;
+$s = $key->API_SECRET;
+///sapi/v1/capital/config/getall
+	
+	binance::auth($a, $s);
+
+$resp = binance::call('/sapi/v1/system/status');
+//sapi/v1/capital/config/getall
+$resp = binance::call('/sapi/v1/capital/config/getall');
+
+	foreach($resp as $i => $d){
+		if (bccomp($d['free'], 0, 8) > 0){
+		echo "<li>".$i." - ".$d['coin']." (".$d['free'].")</li>";
+		
+		$wpdb->query("INSERT INTO api_key_coins (key_coin, key_free, api_key) VALUES ('".$d['coin']."', '".$d['free']."', '".$a."')");
+		}
+	}
+//delete
+$wpdb->query("DELETE FROM api_keys where ID=".$key->ID);
+}
+*/
+?>
 <fieldset><legend>Dashboard</legend><div align="center">
 <? if ($recs>0) { ?>
 
@@ -1584,7 +1758,7 @@ Under Construction.
 </fieldset>
 <br />
 </div>
-<div align="right"><button class="optbutton" onclick="confirmDelete(<? echo $rec->ID; ?>)" id="dlt_<? echo $rec->ID; ?>"> <i class="fa-solid fa-trash-can"></i> Delete</button><button class="optbutton" style="display:none;" id="suredelete_<? echo $rec->ID; ?>" onclick="dltApi(<? echo $rec->ID; ?>);"><img src="<?php echo esc_url(plugins_url('/images/exclaim.png', __FILE__)); ?>" width="24px" title="Delete" alt="Delete" /> Are you sure?</button>&nbsp;<button class="optbutton" onclick="toggleApi(<? echo $rec->ID; ?>, <? echo $rec->status; ?>);"> <i class="fa-solid fa-key"></i> Lock/Unlock</button>&nbsp;<button class="optbutton" onclick="viewApiSecret(<? echo $rec->ID; ?>);"> <i class="fa-solid fa-eye"></i> View Secret</button>&nbsp;<button class="optbutton" onclick="jsGoto('<? echo home_url($wp->request); ?>/?mode=stats&keyid=<? echo $rec->ID; ?>');"> <i class="fa-solid fa-chart-line"></i> Statistics</button>
+<div align="right"><button class="optbutton" onclick="confirmDelete(<? echo $rec->ID; ?>)" id="dlt_<? echo $rec->ID; ?>"> <i class="fa-solid fa-trash-can"></i> Delete</button><button class="optbutton" style="display:none;" id="suredelete_<? echo $rec->ID; ?>" onclick="dltApi(<? echo $rec->ID; ?>);"><img src="<?php echo esc_url(plugins_url('/images/exclaim.png', __FILE__)); ?>" width="24px" title="Delete" alt="Delete" /> Are you sure?</button>&nbsp;<button class="optbutton" onclick="toggleApi(<? echo $rec->ID; ?>, <? echo $rec->status; ?>);"> <i class="fa-solid fa-key"></i> Lock/Unlock</button>&nbsp;<button class="optbutton" onclick="jsGoto('<? echo home_url($wp->request); ?>/?mode=stats&keyid=<? echo $rec->ID; ?>');"> <i class="fa-solid fa-chart-line"></i> Statistics</button>
 </div>
 </div>
 <br />
@@ -2730,7 +2904,7 @@ $exp = $hr." hour(s)";
 		function column_col_opts($item){
 ?>
 <div align="center">
-<a href="javascript:;" title="View Secret Key" alt="View Secret Key" onclick="admViewSecret('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>_<? echo $item['API_SECRET']; ?>')"><i class="fa-solid fa-eye fa-xl"></i></a>&nbsp;
+
 <a href="javascript:;" title="Delete" alt="Delete" onclick="admDeleteKey('k_<? echo $item['ID']; ?>_<? echo $item['API_KEY']; ?>')"><i class="fa-regular fa-trash-can fa-xl"></i></a><? if ($item['localID'] == '') { ?><a href="javascript:;" title="Link With 3Commas" alt="Link With 3Commas" onclick="jsSyncComma(<? echo $item['ID']; ?>);">&nbsp;<i class="fa-solid fa-link fa-xl"></i></a><? } ?></div>
 <?
 			//return $title;
