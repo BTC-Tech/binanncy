@@ -3,7 +3,7 @@
 Plugin Name: Binanncy
 Plugin URI: https://btctech.co.uk/
 Description: Binance API integration for WP
-Version: 2.1.2
+Version: 2.1.3
 */
 require_once "class_commas.php";
 require_once "class_cron.php";
@@ -1328,7 +1328,7 @@ if ($withdrawals['total']<1){ echo "No withdrawals to display."; } else {
 <div id="coin_dialog" title="Information">
   <p><div id="coin_diag_stat_ajax">Loading.....</div></p>
 </div>
-<h4>3Commas Coin Data</h4>
+<h4>Coin Data</h4>
 <div align="center">
 <?
 $table_stats = json_decode(commas::getTableStats($cID));
@@ -1687,7 +1687,7 @@ You can add/remove API keys anytime live here in your dashboard. You can also tu
 <? if (!$accepted_terms) { ?>
 Please read over and accept terms before adding API Keys.
 <div align="center">
-<textarea rows="5" style="width: 100%">Market Vision is not your broker, intermediary, agent, or advisor and has no fiduciary relationship or obligation to you in connection with any trades or other decisions or activities effected by you using Market Vision Services. No communication or information provided to you by Market Vision is intended as, or shall be considered or construed as, investment advice, financial advice, trading advice, or any other sort of advice. All trades are executed automatically, based on the parameters of your order instructions and in accordance with posted trade execution procedures, and you are solely responsible for determining whether any investment, investment strategy or related transaction is appropriate for you according to your personal investment objectives, financial circumstances and risk tolerance, and you shall be solely responsible for any loss or liability therefrom. You should consult legal or tax professionals regarding your specific situation. Market Vision does not recommend that any Digital Asset should be bought, earned, sold, or held by you. Before making the decision to buy, sell or hold any Digital Asset, you should conduct your own due diligence and consult your financial advisors prior to making any investment decision. Market Vision will not be held responsible for the decisions you make to buy, sell, or hold Digital Asset based on the information provided by Market Vision</textarea><br /><br />
+<textarea rows="5" style="width: 100%">Market Vision is not your broker, intermediary, agent, or advisor and has no fiduciary relationship or obligation to you in connection with any trades or other decisions or activities effected by you using Market Vision Services. No communication or information provided to you by Market Vision is intended as, or shall be considered or construed as, investment advice, financial advice, trading advice, or any other sort of advice. All trades are executed automatically, based on the parameters of your order instructions and in accordance with posted trade execution procedures, and you are solely responsible for determining whether any investment, investment strategy or related transaction is appropriate for you according to your personal investment objectives, financial circumstances and risk tolerance, and you shall be solely responsible for any loss or liability therefrom. You should consult legal or tax professionals regarding your specific situation. Market Vision does not recommend that any Digital Asset should be bought, earned, sold, or held by you. Before making the decision to buy, sell or hold any Digital Asset, you should conduct your own due diligence and consult your financial advisors prior to making any investment decision. Market Vision will not be held responsible for the decisions you make to buy, sell, or hold Digital Asset based on the information provided by Market Vision.It is pointed out that the automated spotting from a deposited sum on the own Binance spot account which is linked to the MarketVision trading system is only possible from a sum of 2000 BUSD (no investment advice). It is also noted that the investor/member has to pay 30% (profit share) of the trading profit at the beginning of the next month as a fee and agrees with it. This profit share will be displayed in the statistics via a binancepay link and the profit share refers exclusively to the positively closed trades that were generated in the previous month and must be paid within 7 days after appearing in the back office. If the profit share is not paid out within 7 days, the spot trading will be suspended and reactivated only after the payment.</textarea><br /><br />
 <? if ($account_status < 1) { ?>
 <div class="accountdiv">
 <img src="<?php echo esc_url(plugins_url('/images/account.png', __FILE__)); ?>" width="24px" /></a> You must complete your account profile before adding API keys. <a href="<? echo home_url($wp->request); ?>/?mode=account_progress">Continue</a>
